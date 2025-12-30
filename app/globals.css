@@ -1,0 +1,935 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Source+Sans+3:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;500;600;700&family=Lato:wght@400;700&family=Nunito:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+  }
+
+  /* Sepia Theme - warm, paper-like */
+  .sepia {
+    --background: 39 35% 93%;
+    --foreground: 30 20% 15%;
+    --card: 39 30% 90%;
+    --card-foreground: 30 20% 15%;
+    --popover: 39 30% 90%;
+    --popover-foreground: 30 20% 15%;
+    --primary: 30 60% 35%;
+    --primary-foreground: 39 35% 95%;
+    --secondary: 39 25% 85%;
+    --secondary-foreground: 30 20% 20%;
+    --muted: 39 20% 88%;
+    --muted-foreground: 30 15% 45%;
+    --accent: 39 30% 82%;
+    --accent-foreground: 30 20% 15%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 39 35% 95%;
+    --border: 39 20% 80%;
+    --input: 39 20% 85%;
+    --ring: 30 60% 35%;
+  }
+
+  /* Nord Theme - arctic, north-bluish */
+  .nord {
+    --background: 220 16% 22%;
+    --foreground: 218 27% 92%;
+    --card: 220 16% 18%;
+    --card-foreground: 218 27% 92%;
+    --popover: 220 16% 18%;
+    --popover-foreground: 218 27% 92%;
+    --primary: 193 43% 67%;
+    --primary-foreground: 220 16% 18%;
+    --secondary: 220 16% 28%;
+    --secondary-foreground: 218 27% 92%;
+    --muted: 220 16% 28%;
+    --muted-foreground: 219 28% 66%;
+    --accent: 210 34% 63%;
+    --accent-foreground: 220 16% 18%;
+    --destructive: 354 42% 56%;
+    --destructive-foreground: 218 27% 92%;
+    --border: 220 16% 32%;
+    --input: 220 16% 28%;
+    --ring: 193 43% 67%;
+  }
+
+  /* Dracula Theme - dark purple */
+  .dracula {
+    --background: 231 15% 18%;
+    --foreground: 60 30% 96%;
+    --card: 232 14% 15%;
+    --card-foreground: 60 30% 96%;
+    --popover: 232 14% 15%;
+    --popover-foreground: 60 30% 96%;
+    --primary: 265 89% 78%;
+    --primary-foreground: 231 15% 18%;
+    --secondary: 232 14% 25%;
+    --secondary-foreground: 60 30% 96%;
+    --muted: 232 14% 25%;
+    --muted-foreground: 228 8% 55%;
+    --accent: 326 100% 74%;
+    --accent-foreground: 231 15% 18%;
+    --destructive: 0 100% 67%;
+    --destructive-foreground: 60 30% 96%;
+    --border: 232 14% 28%;
+    --input: 232 14% 25%;
+    --ring: 265 89% 78%;
+  }
+
+  /* Solarized Dark */
+  .solarized-dark {
+    --background: 192 100% 11%;
+    --foreground: 186 8% 55%;
+    --card: 192 81% 14%;
+    --card-foreground: 186 8% 55%;
+    --popover: 192 81% 14%;
+    --popover-foreground: 186 8% 55%;
+    --primary: 175 59% 40%;
+    --primary-foreground: 192 100% 11%;
+    --secondary: 192 81% 18%;
+    --secondary-foreground: 186 8% 55%;
+    --muted: 192 81% 18%;
+    --muted-foreground: 186 8% 45%;
+    --accent: 68 100% 30%;
+    --accent-foreground: 192 100% 11%;
+    --destructive: 1 71% 52%;
+    --destructive-foreground: 186 8% 55%;
+    --border: 192 81% 20%;
+    --input: 192 81% 18%;
+    --ring: 175 59% 40%;
+  }
+
+  /* Solarized Light */
+  .solarized-light {
+    --background: 44 87% 94%;
+    --foreground: 192 81% 14%;
+    --card: 44 87% 91%;
+    --card-foreground: 192 81% 14%;
+    --popover: 44 87% 91%;
+    --popover-foreground: 192 81% 14%;
+    --primary: 175 59% 40%;
+    --primary-foreground: 44 87% 94%;
+    --secondary: 44 60% 85%;
+    --secondary-foreground: 192 81% 14%;
+    --muted: 44 60% 88%;
+    --muted-foreground: 192 81% 30%;
+    --accent: 44 50% 82%;
+    --accent-foreground: 192 81% 14%;
+    --destructive: 1 71% 52%;
+    --destructive-foreground: 44 87% 94%;
+    --border: 44 50% 80%;
+    --input: 44 60% 85%;
+    --ring: 175 59% 40%;
+  }
+
+  /* Ocean Theme - deep blue */
+  .ocean {
+    --background: 210 50% 12%;
+    --foreground: 200 20% 90%;
+    --card: 210 50% 15%;
+    --card-foreground: 200 20% 90%;
+    --popover: 210 50% 15%;
+    --popover-foreground: 200 20% 90%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 210 50% 12%;
+    --secondary: 210 45% 20%;
+    --secondary-foreground: 200 20% 90%;
+    --muted: 210 45% 20%;
+    --muted-foreground: 200 15% 55%;
+    --accent: 187 100% 42%;
+    --accent-foreground: 210 50% 12%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 200 20% 90%;
+    --border: 210 45% 25%;
+    --input: 210 45% 20%;
+    --ring: 199 89% 48%;
+  }
+
+  /* Forest Theme - green nature */
+  .forest {
+    --background: 150 20% 10%;
+    --foreground: 120 10% 90%;
+    --card: 150 20% 13%;
+    --card-foreground: 120 10% 90%;
+    --popover: 150 20% 13%;
+    --popover-foreground: 120 10% 90%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 150 20% 10%;
+    --secondary: 150 18% 18%;
+    --secondary-foreground: 120 10% 90%;
+    --muted: 150 18% 18%;
+    --muted-foreground: 120 8% 55%;
+    --accent: 84 60% 45%;
+    --accent-foreground: 150 20% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 120 10% 90%;
+    --border: 150 18% 22%;
+    --input: 150 18% 18%;
+    --ring: 142 71% 45%;
+  }
+
+  /* Rose Theme - pink/rose gold */
+  .rose {
+    --background: 350 20% 12%;
+    --foreground: 340 15% 90%;
+    --card: 350 20% 15%;
+    --card-foreground: 340 15% 90%;
+    --popover: 350 20% 15%;
+    --popover-foreground: 340 15% 90%;
+    --primary: 340 82% 65%;
+    --primary-foreground: 350 20% 12%;
+    --secondary: 350 18% 20%;
+    --secondary-foreground: 340 15% 90%;
+    --muted: 350 18% 20%;
+    --muted-foreground: 340 12% 55%;
+    --accent: 330 70% 55%;
+    --accent-foreground: 350 20% 12%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 340 15% 90%;
+    --border: 350 18% 25%;
+    --input: 350 18% 20%;
+    --ring: 340 82% 65%;
+  }
+
+  /* Midnight Theme - very dark with purple accents */
+  .midnight {
+    --background: 240 20% 6%;
+    --foreground: 240 10% 92%;
+    --card: 240 20% 9%;
+    --card-foreground: 240 10% 92%;
+    --popover: 240 20% 9%;
+    --popover-foreground: 240 10% 92%;
+    --primary: 250 90% 70%;
+    --primary-foreground: 240 20% 6%;
+    --secondary: 240 18% 14%;
+    --secondary-foreground: 240 10% 92%;
+    --muted: 240 18% 14%;
+    --muted-foreground: 240 8% 50%;
+    --accent: 280 80% 60%;
+    --accent-foreground: 240 20% 6%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 240 10% 92%;
+    --border: 240 18% 18%;
+    --input: 240 18% 14%;
+    --ring: 250 90% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+}
+
+/* Font families */
+.font-inter { font-family: 'Inter', system-ui, sans-serif; }
+.font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+.font-source-sans { font-family: 'Source Sans 3', system-ui, sans-serif; }
+.font-roboto { font-family: 'Roboto', system-ui, sans-serif; }
+.font-open-sans { font-family: 'Open Sans', system-ui, sans-serif; }
+.font-lato { font-family: 'Lato', system-ui, sans-serif; }
+.font-nunito { font-family: 'Nunito', system-ui, sans-serif; }
+.font-poppins { font-family: 'Poppins', system-ui, sans-serif; }
+.font-space-grotesk { font-family: 'Space Grotesk', system-ui, sans-serif; }
+.font-system { font-family: system-ui, -apple-system, sans-serif; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Editor styles */
+.ProseMirror {
+  outline: none;
+  min-height: 100%;
+}
+
+.ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror p {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror li p {
+  margin: 0;
+}
+
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid hsl(var(--border));
+  margin: 1.5rem 0;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: hsl(var(--muted-foreground));
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror pre {
+  background: hsl(var(--muted));
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-spline-sans-mono), monospace;
+}
+
+.ProseMirror pre code {
+  color: inherit;
+  padding: 0;
+  background: none;
+  font-size: 0.875rem;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1rem;
+  margin-left: 0;
+  color: hsl(var(--muted-foreground));
+}
+
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-top: 0.25rem;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 0;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  border: 1px solid hsl(var(--border));
+  box-sizing: border-box;
+  min-width: 1em;
+  padding: 0.5rem;
+  position: relative;
+  vertical-align: top;
+}
+
+.ProseMirror table th {
+  background-color: hsl(var(--muted));
+  font-weight: 600;
+}
+
+/* ===== Animated Cover Backgrounds ===== */
+
+/* Aurora - Northern lights effect */
+@keyframes aurora {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.cover-aurora {
+  background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #0f0c29, #1a1a2e, #4a00e0, #8e2de2);
+  background-size: 400% 400%;
+  animation: aurora 30s ease infinite;
+}
+
+/* Ocean Waves */
+@keyframes ocean-wave {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.cover-ocean {
+  background: linear-gradient(-45deg, #000428, #004e92, #000428, #1a2980, #26d0ce);
+  background-size: 400% 400%;
+  animation: ocean-wave 25s ease infinite;
+}
+
+/* Sunset Glow */
+@keyframes sunset {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.cover-sunset {
+  background: linear-gradient(-45deg, #f12711, #f5af19, #f12711, #ee0979, #ff6a00);
+  background-size: 400% 400%;
+  animation: sunset 20s ease infinite;
+}
+
+/* Matrix Rain */
+@keyframes matrix {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+.cover-matrix {
+  background:
+    linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 50%, rgba(0,0,0,0.8) 100%),
+    repeating-linear-gradient(
+      0deg,
+      #000 0px,
+      #000 2px,
+      #0f0 2px,
+      #0f0 4px
+    );
+  background-size: 100% 100%, 4px 200%;
+  animation: matrix 40s linear infinite;
+}
+
+/* Pulse Glow */
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    filter: brightness(1.3) saturate(1.2);
+  }
+}
+
+.cover-pulse {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  animation: pulse-glow 6s ease-in-out infinite;
+}
+
+/* Rainbow Shift */
+@keyframes rainbow {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+.cover-rainbow {
+  background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff);
+  animation: rainbow 20s linear infinite;
+}
+
+/* Nebula - Space effect */
+@keyframes nebula {
+  0%, 100% {
+    background-position: 0% 50%;
+    filter: brightness(1);
+  }
+  25% {
+    filter: brightness(1.1);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: brightness(0.9);
+  }
+  75% {
+    filter: brightness(1.1);
+  }
+}
+
+.cover-nebula {
+  background: linear-gradient(-45deg, #1a0533, #4a1c6b, #0d1b2a, #1b263b, #415a77, #4a1c6b, #1a0533);
+  background-size: 400% 400%;
+  animation: nebula 40s ease infinite;
+}
+
+/* Fire */
+@keyframes fire {
+  0%, 100% {
+    background-position: 0% 100%;
+  }
+  50% {
+    background-position: 100% 0%;
+  }
+}
+
+.cover-fire {
+  background: linear-gradient(-45deg, #1a0000, #4a0000, #ff4500, #ff6a00, #ffa500, #ff4500, #4a0000);
+  background-size: 400% 400%;
+  animation: fire 18s ease infinite;
+}
+
+/* Cyber Grid */
+@keyframes cyber-grid {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 50px 50px;
+  }
+}
+
+.cover-cyber {
+  background-color: #0a0a0a;
+  background-image:
+    linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(rgba(255, 0, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 255, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+  animation: cyber-grid 10s linear infinite;
+}
+
+/* Gradient Wave */
+@keyframes gradient-wave {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.cover-wave {
+  background: linear-gradient(
+    90deg,
+    #00d2ff,
+    #3a7bd5,
+    #00d2ff,
+    #928dab,
+    #1f4037,
+    #99f2c8,
+    #00d2ff
+  );
+  background-size: 600% 100%;
+  animation: gradient-wave 30s ease infinite;
+}
+
+/* Starfield - twinkling stars in deep space */
+@keyframes starfield-move {
+  0% {
+    background-position: 0 0, 0 0, 0 0;
+  }
+  100% {
+    background-position: 500px 1000px, 400px 800px, 300px 600px;
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+.cover-starfield {
+  background-color: #0a0a0f;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, #fff, transparent),
+    radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+    radial-gradient(2px 2px at 160px 120px, rgba(255,255,255,0.9), transparent),
+    radial-gradient(1px 1px at 230px 80px, #fff, transparent),
+    radial-gradient(2px 2px at 300px 150px, rgba(200,200,255,0.8), transparent),
+    radial-gradient(1px 1px at 370px 50px, #fff, transparent),
+    radial-gradient(2px 2px at 450px 180px, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 520px 100px, #fff, transparent),
+    radial-gradient(2px 2px at 600px 60px, rgba(200,220,255,0.9), transparent),
+    radial-gradient(1px 1px at 680px 200px, #fff, transparent),
+    radial-gradient(2px 2px at 750px 130px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(ellipse at 50% 50%, rgba(30, 0, 50, 0.5) 0%, transparent 60%);
+  background-size: 800px 250px;
+  animation: starfield-move 60s linear infinite, twinkle 4s ease-in-out infinite;
+}
+
+/* Northern Lights - flowing aurora effect */
+@keyframes northern-lights {
+  0%, 100% {
+    background-position: 0% 50%, 50% 50%;
+    filter: hue-rotate(0deg);
+  }
+  25% {
+    background-position: 50% 0%, 100% 50%;
+  }
+  50% {
+    background-position: 100% 50%, 50% 100%;
+    filter: hue-rotate(30deg);
+  }
+  75% {
+    background-position: 50% 100%, 0% 50%;
+  }
+}
+
+.cover-northern-lights {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(0, 255, 128, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 50%, rgba(0, 200, 255, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 30%, rgba(128, 0, 255, 0.3) 0%, transparent 40%),
+    linear-gradient(to bottom, #0a0a1a 0%, #1a0a2a 50%, #0a1a2a 100%);
+  background-size: 200% 200%, 200% 200%, 200% 200%, 100% 100%;
+  animation: northern-lights 20s ease infinite;
+}
+
+/* Synthwave - retro 80s grid */
+@keyframes synthwave-grid {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  100% {
+    background-position: 0 100px, 0 100px;
+  }
+}
+
+.cover-synthwave {
+  background:
+    linear-gradient(to bottom, transparent 0%, rgba(255,0,128,0.1) 50%, rgba(0,255,255,0.2) 100%),
+    linear-gradient(rgba(255,0,128,0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,0,128,0.3) 1px, transparent 1px),
+    linear-gradient(to bottom, #0a0020 0%, #1a0040 40%, #ff6b35 100%);
+  background-size: 100% 100%, 40px 40px, 40px 40px, 100% 100%;
+  animation: synthwave-grid 4s linear infinite;
+}
+
+/* Deep Space - cosmic clouds */
+@keyframes deep-space {
+  0%, 100% {
+    background-position: 0% 0%, 100% 100%, 50% 50%;
+  }
+  33% {
+    background-position: 100% 0%, 0% 100%, 0% 0%;
+  }
+  66% {
+    background-position: 100% 100%, 0% 0%, 100% 100%;
+  }
+}
+
+.cover-deep-space {
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(120, 0, 200, 0.4) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(0, 100, 200, 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(200, 50, 100, 0.2) 0%, transparent 60%),
+    linear-gradient(to bottom, #030108 0%, #0a0015 50%, #050510 100%);
+  background-size: 200% 200%;
+  animation: deep-space 45s ease infinite;
+}
+
+/* Electric Storm - lightning pulses */
+@keyframes electric-storm {
+  0%, 9%, 11%, 29%, 31%, 49%, 51%, 100% {
+    background-color: #0a0a15;
+  }
+  10%, 30%, 50% {
+    background-color: #1a1a30;
+  }
+}
+
+@keyframes lightning-flash {
+  0%, 100% { opacity: 0; }
+  10%, 12% { opacity: 0.8; }
+  11% { opacity: 0; }
+  50%, 52% { opacity: 0.6; }
+  51% { opacity: 0; }
+}
+
+.cover-electric {
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(100, 100, 255, 0.1) 50%, transparent 100%),
+    radial-gradient(ellipse at 30% 20%, rgba(150, 150, 255, 0.2) 0%, transparent 30%),
+    radial-gradient(ellipse at 70% 80%, rgba(100, 150, 255, 0.15) 0%, transparent 25%),
+    linear-gradient(to bottom, #0a0a1a, #1a1a2a, #0a0a1a);
+  animation: electric-storm 8s ease infinite;
+}
+
+/* Holographic - iridescent shimmer */
+@keyframes holographic {
+  0% {
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg) saturate(1.5);
+  }
+  50% {
+    background-position: 100% 50%;
+    filter: hue-rotate(180deg) saturate(2);
+  }
+  100% {
+    background-position: 0% 50%;
+    filter: hue-rotate(360deg) saturate(1.5);
+  }
+}
+
+.cover-holographic {
+  background: linear-gradient(
+    135deg,
+    #ff00ff 0%,
+    #00ffff 20%,
+    #ff00ff 40%,
+    #ffff00 60%,
+    #00ffff 80%,
+    #ff00ff 100%
+  );
+  background-size: 400% 400%;
+  animation: holographic 10s ease infinite;
+}
+
+/* Underwater - deep ocean effect */
+@keyframes underwater {
+  0%, 100% {
+    background-position: 0% 0%;
+    filter: brightness(1);
+  }
+  25% {
+    filter: brightness(1.1);
+  }
+  50% {
+    background-position: 100% 100%;
+    filter: brightness(0.9);
+  }
+  75% {
+    filter: brightness(1.05);
+  }
+}
+
+.cover-underwater {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(100, 200, 255, 0.3) 0%, transparent 40%),
+    radial-gradient(ellipse at 70% 60%, rgba(50, 150, 200, 0.2) 0%, transparent 35%),
+    radial-gradient(ellipse at 20% 80%, rgba(100, 180, 220, 0.25) 0%, transparent 30%),
+    linear-gradient(to bottom, #001220 0%, #002040 30%, #001830 70%, #000a15 100%);
+  background-size: 200% 200%;
+  animation: underwater 25s ease infinite;
+}
+
+/* Cosmic Dust - swirling particles */
+@keyframes cosmic-dust {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.cover-cosmic-dust {
+  background:
+    radial-gradient(circle at 50% 50%, transparent 20%, rgba(100, 50, 150, 0.1) 40%, transparent 60%),
+    radial-gradient(circle at 30% 30%, rgba(150, 100, 200, 0.15) 0%, transparent 30%),
+    radial-gradient(circle at 70% 70%, rgba(100, 150, 200, 0.1) 0%, transparent 25%),
+    conic-gradient(from 0deg at 50% 50%, #0a0515, #150a20, #0a0515, #150520, #0a0515);
+  animation: cosmic-dust 120s linear infinite;
+}
+
+/* Neon City - cyberpunk glow */
+@keyframes neon-city {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes neon-flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    filter: brightness(1) saturate(1);
+  }
+  20%, 24%, 55% {
+    filter: brightness(1.2) saturate(1.3);
+  }
+}
+
+.cover-neon-city {
+  background: linear-gradient(
+    -45deg,
+    #0a0010,
+    #1a0030,
+    #ff00aa,
+    #00ffff,
+    #1a0030,
+    #0a0010
+  );
+  background-size: 400% 400%;
+  animation: neon-city 15s ease infinite, neon-flicker 5s ease infinite;
+}
+
+/* Lava Flow - molten movement */
+@keyframes lava-flow {
+  0%, 100% {
+    background-position: 0% 50%, 50% 50%;
+  }
+  25% {
+    background-position: 50% 100%, 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%, 50% 0%;
+  }
+  75% {
+    background-position: 50% 0%, 100% 50%;
+  }
+}
+
+.cover-lava {
+  background:
+    radial-gradient(ellipse at 30% 70%, rgba(255, 100, 0, 0.6) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(255, 50, 0, 0.5) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(200, 0, 0, 0.4) 0%, transparent 55%),
+    linear-gradient(to bottom, #1a0500 0%, #3a0a00 30%, #2a0800 70%, #0a0200 100%);
+  background-size: 200% 200%;
+  animation: lava-flow 20s ease infinite;
+}
+
+/* Midnight Galaxy - spiral galaxy */
+@keyframes galaxy-spin {
+  0% {
+    background-position: 50% 50%;
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    background-position: 50% 50%;
+    filter: hue-rotate(360deg);
+  }
+}
+
+.cover-galaxy {
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(200, 150, 255, 0.3) 0%, transparent 30%),
+    radial-gradient(ellipse at 40% 40%, rgba(100, 100, 255, 0.2) 0%, transparent 40%),
+    radial-gradient(ellipse at 60% 60%, rgba(150, 100, 200, 0.15) 0%, transparent 35%),
+    conic-gradient(from 0deg at 50% 50%,
+      transparent 0deg,
+      rgba(150, 100, 255, 0.1) 30deg,
+      transparent 60deg,
+      rgba(100, 150, 255, 0.1) 120deg,
+      transparent 150deg,
+      rgba(150, 100, 200, 0.1) 210deg,
+      transparent 240deg,
+      rgba(100, 100, 255, 0.1) 300deg,
+      transparent 330deg
+    ),
+    radial-gradient(circle at 50% 50%, #0a0515 0%, #050210 100%);
+  animation: galaxy-spin 90s linear infinite;
+}
