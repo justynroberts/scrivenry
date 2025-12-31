@@ -76,6 +76,7 @@ CREATE TABLE `users` (
 	`name` text,
 	`avatar` text,
 	`password_hash` text,
+	`has_seen_tour` integer NOT NULL DEFAULT 0,
 	`settings` text DEFAULT '{}',
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL

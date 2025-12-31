@@ -26,14 +26,23 @@ function WorkspaceContent({
   const [favorites, setFavorites] = useState<Page[]>([])
   const [showTour, setShowTour] = useState(false)
 
-  // Check if tour should be shown
+  // Check if tour should be shown (from database)
   useEffect(() => {
-    const tourCompleted = localStorage.getItem('scrivenry-tour-completed')
-    if (!tourCompleted) {
-      // Delay tour start to let page render
-      const timer = setTimeout(() => setShowTour(true), 1000)
-      return () => clearTimeout(timer)
+    async function checkTourStatus() {
+      try {
+        const res = await fetch('/api/user/tour')
+        if (res.ok) {
+          const data = await res.json()
+          if (!data.hasSeenTour) {
+            // Delay tour start to let page render
+            setTimeout(() => setShowTour(true), 1000)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check tour status:', error)
+      }
     }
+    checkTourStatus()
   }, [])
 
   // Fetch favorites

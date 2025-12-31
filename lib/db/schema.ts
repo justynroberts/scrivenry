@@ -18,6 +18,7 @@ export const users = sqliteTable('users', {
   name: text('name'),
   avatar: text('avatar'),
   passwordHash: text('password_hash'),
+  hasSeenTour: integer('has_seen_tour', { mode: 'boolean' }).notNull().default(false),
   settings: text('settings', { mode: 'json' }).$type<Record<string, unknown>>().default({}),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),

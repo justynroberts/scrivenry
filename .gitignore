@@ -8,9 +8,9 @@ node_modules
 out
 build
 dist
-dist-electron/
+dist-electron
 
-# Electron resources (large binaries)
+# Electron build artifacts (keep electron source, ignore binaries)
 electron/resources/node
 
 # Database
@@ -38,6 +38,9 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Test coverage
+coverage
 
 # TypeScript
 *.tsbuildinfo

@@ -824,6 +824,48 @@
   animation: underwater 25s ease infinite;
 }
 
+/* ===== Block Width Controls ===== */
+/* Like Notion's width toggle for blocks like kanban, database, etc. */
+
+.block-width-wide {
+  position: relative;
+  width: calc(100% + 8rem);
+  margin-left: -4rem;
+  margin-right: -4rem;
+}
+
+.block-width-full {
+  position: relative;
+  width: calc(100vw - 16rem);
+  margin-left: calc(-50vw + 50% + 8rem);
+  margin-right: calc(-50vw + 50% + 8rem);
+  max-width: none;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .block-width-wide {
+    width: calc(100% + 2rem);
+    margin-left: -1rem;
+    margin-right: -1rem;
+  }
+
+  .block-width-full {
+    width: calc(100vw - 2rem);
+    margin-left: calc(-50vw + 50% + 1rem);
+    margin-right: calc(-50vw + 50% + 1rem);
+  }
+}
+
+/* When sidebar is collapsed, adjust full width */
+@media (min-width: 1024px) {
+  .block-width-full {
+    width: calc(100vw - 18rem);
+    margin-left: calc(-50vw + 50% + 9rem);
+    margin-right: calc(-50vw + 50% + 9rem);
+  }
+}
+
 /* Cosmic Dust - swirling particles */
 @keyframes cosmic-dust {
   0% {

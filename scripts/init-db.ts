@@ -12,9 +12,12 @@ if (!existsSync(dbDir)) {
 
 const sqlite = new Database(dbPath)
 
-// Enable WAL mode and foreign keys
+// Enable WAL mode
 sqlite.pragma('journal_mode = WAL')
-sqlite.pragma('foreign_keys = ON')
+
+// IMPORTANT: Disable foreign keys during schema creation
+// (migrations have tables in wrong order - FK references before table exists)
+sqlite.pragma('foreign_keys = OFF')
 
 // Get all migration files sorted by name
 const drizzleDir = join(__dirname, '../drizzle')
@@ -49,6 +52,9 @@ for (const file of migrationFiles) {
     }
   }
 }
+
+// Re-enable foreign keys after schema is created
+sqlite.pragma('foreign_keys = ON')
 
 console.log('\nDatabase initialized successfully!')
 sqlite.close()

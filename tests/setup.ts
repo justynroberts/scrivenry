@@ -42,16 +42,21 @@ export async function register(page: Page, name: string, email: string, password
 
 export async function createPage(page: Page, title?: string) {
   // Click the + button in sidebar to create a new page
-  await page.waitForSelector('[data-testid="sidebar-create-page"]')
+  await page.waitForSelector('[data-testid="sidebar-create-page"]', { visible: true })
+  await wait(300) // Ensure element is stable
   await page.click('[data-testid="sidebar-create-page"]')
-  await page.waitForNavigation({ waitUntil: 'networkidle0' })
+
+  // Wait for page editor to appear (client-side navigation)
+  await page.waitForSelector('[data-testid="page-title"]', { visible: true, timeout: 15000 })
+  await wait(500) // Wait for page to stabilize after navigation
 
   if (title) {
     // Clear and type the new title
-    const titleEl = await page.waitForSelector('[data-testid="page-title"]')
-    await titleEl?.click({ clickCount: 3 }) // Select all
+    await page.waitForSelector('[data-testid="page-title"]', { visible: true })
+    await page.click('[data-testid="page-title"]', { clickCount: 3 }) // Select all
     await page.keyboard.type(title)
     await page.keyboard.press('Tab') // Blur to save
+    await wait(300)
   }
 }
 

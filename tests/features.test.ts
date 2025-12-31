@@ -77,10 +77,17 @@ async function testEmojiPicker() {
   console.log('Test 1: Emoji Picker for Page Icons')
 
   await createPage(page, 'Emoji Test Page')
+  await wait(1000) // Wait for page to fully render
 
-  // Click the page icon to open emoji picker
-  await clickTestId(page, 'page-icon')
-  await waitForTestId(page, 'emoji-picker')
+  // Click the page icon to open emoji picker (retry if needed)
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await clickTestId(page, 'page-icon')
+    await wait(300)
+    const picker = await page.$('[data-testid="emoji-picker"]')
+    if (picker) break
+    await wait(500)
+  }
+  await waitForTestId(page, 'emoji-picker', 10000)
 
   // Select an emoji
   const emojiButton = await page.$('[data-testid="emoji-picker"] button:nth-child(5)')
@@ -99,6 +106,10 @@ async function testEmojiPicker() {
 // Test 2: Page Cover Images
 async function testPageCover() {
   console.log('Test 2: Page Cover Images')
+
+  // Hover on page title area to reveal the hidden buttons
+  await page.hover('[data-testid="page-title"]')
+  await wait(300)
 
   // Click add cover button
   await clickTestId(page, 'add-cover-btn')
@@ -148,9 +159,9 @@ async function testTemplates() {
   console.log(`  - Templates available: ${data?.templates?.length || 0}`)
   console.log('  [PASS] Templates API works\n')
 
-  // Go back to the app
+  // Go back to the app and wait for workspace to load
   await page.goto(BASE_URL)
-  await wait(1000)
+  await page.waitForSelector('[data-testid="sidebar-create-page"]', { timeout: 30000 })
 }
 
 // Test 5: Toggle Blocks
@@ -158,11 +169,14 @@ async function testToggleBlocks() {
   console.log('Test 5: Toggle Blocks (Collapsible)')
 
   await createPage(page, 'Toggle Test')
+  await wait(1000) // Wait for editor to initialize
 
   // Focus editor and type slash command
+  await page.waitForSelector('.ProseMirror', { visible: true, timeout: 10000 })
   const editor = await page.$('.ProseMirror')
   if (editor) {
-    await editor.click()
+    await editor.focus()
+    await wait(300)
     await page.keyboard.type('/toggle')
     await wait(500)
     await page.keyboard.press('Enter')
@@ -180,9 +194,11 @@ async function testCalloutBlocks() {
   console.log('Test 6: Callout Blocks with Icons')
 
   // Focus editor and type slash command
+  await page.waitForSelector('.ProseMirror', { visible: true, timeout: 10000 })
   const editor = await page.$('.ProseMirror')
   if (editor) {
-    await editor.click()
+    await editor.focus()
+    await wait(300)
     await page.keyboard.type('/callout')
     await wait(500)
     await page.keyboard.press('Enter')
@@ -200,11 +216,14 @@ async function testUndoRedo() {
   console.log('Test 7: Undo/Redo Functionality')
 
   await createPage(page, 'Undo Test')
+  await wait(1000) // Wait for editor to initialize
 
   // Type some text
+  await page.waitForSelector('.ProseMirror', { visible: true, timeout: 10000 })
   const editor = await page.$('.ProseMirror')
   if (editor) {
-    await editor.click()
+    await editor.focus()
+    await wait(300)
     await page.keyboard.type('Test content for undo')
     await wait(300)
 

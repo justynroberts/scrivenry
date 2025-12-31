@@ -112,6 +112,19 @@ export default function RegisterPage() {
             Sign in
           </Link>
         </p>
+
+        <p className="mt-8 text-center text-xs text-muted-foreground/60">
+          A{' '}
+          <a
+            href="https://www.fintonlabs.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-colors"
+          >
+            Fintonlabs
+          </a>
+          {' '}Product
+        </p>
       </div>
     </div>
   )

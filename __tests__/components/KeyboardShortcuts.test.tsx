@@ -14,14 +14,14 @@ describe('KeyboardShortcuts', () => {
       render(
         <KeyboardShortcuts open={true} onOpenChange={mockOnOpenChange} />
       )
-      expect(screen.getByTestId('keyboard-shortcuts')).toBeInTheDocument()
+      expect(screen.getByTestId('shortcuts-modal')).toBeInTheDocument()
     })
 
     it('should not render when closed', () => {
       render(
         <KeyboardShortcuts open={false} onOpenChange={mockOnOpenChange} />
       )
-      expect(screen.queryByTestId('keyboard-shortcuts')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('shortcuts-modal')).not.toBeInTheDocument()
     })
 
     it('should display title', () => {

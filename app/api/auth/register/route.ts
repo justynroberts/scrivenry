@@ -172,7 +172,7 @@ export async function POST(request: Request) {
       position: 1,
     })
 
-    // Create Charts & Diagrams page
+    // Create Charts & Diagrams page with working examples
     const chartsId = ulid()
     await db.insert(pages).values({
       id: chartsId,
@@ -180,35 +180,99 @@ export async function POST(request: Request) {
       parentId: showcaseId,
       title: 'Charts & Diagrams',
       icon: '📊',
+      cover: 'animated:aurora',
       content: {
         type: 'doc',
         content: [
-          { type: 'paragraph', content: [{ type: 'text', text: 'Scrivenry supports rich visualizations including Mermaid diagrams and Chart.js charts.' }] },
-          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Mermaid Diagram' }] },
-          { type: 'paragraph', content: [{ type: 'text', text: 'Create flowcharts, sequence diagrams, and more using Mermaid syntax. Type ' }, { type: 'text', marks: [{ type: 'code' }], text: '/mermaid' }, { type: 'text', text: ' to insert a diagram.' }] },
-          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Chart Block' }] },
-          { type: 'paragraph', content: [{ type: 'text', text: 'Create bar, line, pie, and doughnut charts. Type ' }, { type: 'text', marks: [{ type: 'code' }], text: '/chart' }, { type: 'text', text: ' to insert a chart.' }] },
-          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Tables' }] },
-          { type: 'table', content: [
-            { type: 'tableRow', content: [
-              { type: 'tableHeader', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Feature' }] }] },
-              { type: 'tableHeader', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Status' }] }] }
-            ]},
-            { type: 'tableRow', content: [
-              { type: 'tableCell', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Mermaid Diagrams' }] }] },
-              { type: 'tableCell', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Supported' }] }] }
-            ]},
-            { type: 'tableRow', content: [
-              { type: 'tableCell', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Chart.js Charts' }] }] },
-              { type: 'tableCell', attrs: { colspan: 1, rowspan: 1 }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Supported' }] }] }
-            ]}
-          ]}
+          { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Charts & Diagrams' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: 'Create beautiful visualizations directly in your documents.' }] },
+          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Flowchart (Mermaid)' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: 'Document workflows and processes with Mermaid diagrams:' }] },
+          { type: 'mermaidBlock', attrs: { code: 'flowchart TD\n    A[New Feature Request] --> B{Is it feasible?}\n    B -->|Yes| C[Design Phase]\n    B -->|No| D[Reject & Document]\n    C --> E[Implementation]\n    E --> F[Code Review]\n    F --> G{Approved?}\n    G -->|Yes| H[Deploy]\n    G -->|No| E\n    H --> I[Monitor]\n    D --> J[Archive]' }},
+          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Sequence Diagram' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: 'Visualize API interactions and system flows:' }] },
+          { type: 'mermaidBlock', attrs: { code: 'sequenceDiagram\n    participant User\n    participant Browser\n    participant Server\n    participant Database\n    \n    User->>Browser: Click Save\n    Browser->>Server: POST /api/pages\n    Server->>Database: INSERT page\n    Database-->>Server: Success\n    Server-->>Browser: 200 OK\n    Browser-->>User: Show success' }},
+          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Bar Chart' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: 'Track metrics with interactive charts:' }] },
+          { type: 'chartBlock', attrs: {
+            chartType: 'bar',
+            config: JSON.stringify({
+              labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+              datasets: [{
+                label: 'Monthly Revenue ($K)',
+                data: [45, 52, 48, 61, 55, 72],
+                backgroundColor: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#8b5cf6', '#a78bfa', '#c4b5fd']
+              }]
+            })
+          }},
+          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Pie Chart' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: 'Show distributions and proportions:' }] },
+          { type: 'chartBlock', attrs: {
+            chartType: 'pie',
+            config: JSON.stringify({
+              labels: ['Development', 'Design', 'Marketing', 'Operations', 'Support'],
+              datasets: [{
+                data: [35, 20, 25, 12, 8],
+                backgroundColor: ['#8b5cf6', '#06b6d4', '#22c55e', '#f59e0b', '#ef4444']
+              }]
+            })
+          }},
+          { type: 'callout', attrs: { emoji: '💡' }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Type ' }, { type: 'text', marks: [{ type: 'code' }], text: '/mermaid' }, { type: 'text', text: ' for diagrams or ' }, { type: 'text', marks: [{ type: 'code' }], text: '/chart' }, { type: 'text', text: ' for charts. Click any chart to edit its data!' }] }] }
         ]
       },
       createdBy: userId,
       lastEditedBy: userId,
       depth: 1,
       position: 2,
+    })
+
+    // Create Code Execution page - prominently showing JS/Python
+    const codeExecId = ulid()
+    await db.insert(pages).values({
+      id: codeExecId,
+      workspaceId,
+      parentId: showcaseId,
+      title: 'Code Execution',
+      icon: '💻',
+      cover: 'animated:matrix',
+      content: {
+        type: 'doc',
+        content: [
+          { type: 'heading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Live Code Execution' }] },
+          { type: 'callout', attrs: { emoji: '🚀' }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Run JavaScript and Python code directly in your browser! Click the green Run button to execute.' }] }] },
+          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'JavaScript Example' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: 'Calculate Fibonacci sequence and display results:' }] },
+          { type: 'javascriptBlock', attrs: {
+            code: '// Fibonacci sequence generator\nfunction fibonacci(n) {\n  const seq = [0, 1];\n  for (let i = 2; i < n; i++) {\n    seq.push(seq[i-1] + seq[i-2]);\n  }\n  return seq;\n}\n\nconst result = fibonacci(10);\nconsole.log("First 10 Fibonacci numbers:");\nconsole.log(result.join(", "));\n\n// Calculate sum\nconst sum = result.reduce((a, b) => a + b, 0);\nconsole.log("Sum:", sum);',
+            output: null,
+            error: null,
+            autoRun: false,
+            showOutput: true
+          }},
+          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Python Example' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: 'Data analysis with Python (powered by Pyodide):' }] },
+          { type: 'pythonBlock', attrs: {
+            code: '# Python runs in your browser via Pyodide!\nimport math\n\n# Prime number checker\ndef is_prime(n):\n    if n < 2:\n        return False\n    for i in range(2, int(math.sqrt(n)) + 1):\n        if n % i == 0:\n            return False\n    return True\n\n# Find primes up to 50\nprimes = [n for n in range(2, 51) if is_prime(n)]\nprint(f"Prime numbers up to 50:")\nprint(primes)\nprint(f"\\nTotal: {len(primes)} primes")',
+            output: null,
+            error: null,
+            showOutput: true
+          }},
+          { type: 'heading', attrs: { level: 2 }, content: [{ type: 'text', text: 'Interactive Math' }] },
+          { type: 'paragraph', content: [{ type: 'text', text: 'Try modifying the code and running it yourself:' }] },
+          { type: 'javascriptBlock', attrs: {
+            code: '// Interactive example - try changing these values!\nconst width = 5;\nconst height = 3;\n\n// Draw a rectangle with asterisks\nfor (let row = 0; row < height; row++) {\n  let line = "";\n  for (let col = 0; col < width; col++) {\n    if (row === 0 || row === height-1 || col === 0 || col === width-1) {\n      line += "* ";\n    } else {\n      line += "  ";\n    }\n  }\n  console.log(line);\n}\n\nconsole.log(`\\nArea: ${width * height} square units`);',
+            output: null,
+            error: null,
+            autoRun: false,
+            showOutput: true
+          }},
+          { type: 'callout', attrs: { emoji: '💡' }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Type ' }, { type: 'text', marks: [{ type: 'code' }], text: '/javascript' }, { type: 'text', text: ' or ' }, { type: 'text', marks: [{ type: 'code' }], text: '/python' }, { type: 'text', text: ' anywhere to add your own code blocks!' }] }] }
+        ]
+      },
+      createdBy: userId,
+      lastEditedBy: userId,
+      depth: 1,
+      position: 3,
     })
 
     // Create API Examples page
@@ -254,7 +318,7 @@ export async function POST(request: Request) {
       createdBy: userId,
       lastEditedBy: userId,
       depth: 1,
-      position: 3,
+      position: 4,
     })
 
     // Create session

@@ -49,7 +49,7 @@ interface KeyboardShortcutsProps {
 export function KeyboardShortcuts({ open, onOpenChange }: KeyboardShortcutsProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl" data-testid="keyboard-shortcuts">
+      <DialogContent className="max-w-2xl" data-testid="shortcuts-modal">
         <DialogHeader>
           <DialogTitle>Keyboard Shortcuts</DialogTitle>
         </DialogHeader>

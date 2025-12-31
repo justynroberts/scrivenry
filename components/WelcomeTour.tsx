@@ -80,9 +80,14 @@ export function WelcomeTour({ onComplete }: WelcomeTourProps) {
     }
   }
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     setIsVisible(false)
-    localStorage.setItem('scrivenry-tour-completed', 'true')
+    // Save to database
+    try {
+      await fetch('/api/user/tour', { method: 'POST' })
+    } catch (error) {
+      console.error('Failed to save tour status:', error)
+    }
     onComplete()
   }
 

@@ -3,7 +3,7 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
 import { useState } from 'react'
-import { Database, Plus, X, Trash2 } from 'lucide-react'
+import { Database, Plus, X, Trash2, Maximize2, Minimize2, Square } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Row {
@@ -17,12 +17,15 @@ interface Column {
   type: 'text' | 'number' | 'checkbox' | 'select'
 }
 
+type BlockWidth = 'normal' | 'wide' | 'full'
+
 interface SimpleDatabaseComponentProps {
   node: {
     attrs: {
       columns?: Column[]
       rows?: Row[]
       title?: string
+      width?: BlockWidth
     }
   }
   updateAttributes: (attrs: Record<string, unknown>) => void
@@ -44,8 +47,32 @@ const SimpleDatabaseComponent = ({ node, updateAttributes, deleteNode }: SimpleD
   const columns = node.attrs.columns || defaultColumns
   const rows = node.attrs.rows || defaultRows
   const title = node.attrs.title || 'Database'
+  const width = node.attrs.width || 'normal'
 
   const [editingTitle, setEditingTitle] = useState(false)
+
+  const cycleWidth = () => {
+    const widths: BlockWidth[] = ['normal', 'wide', 'full']
+    const currentIndex = widths.indexOf(width)
+    const nextIndex = (currentIndex + 1) % widths.length
+    updateAttributes({ width: widths[nextIndex] })
+  }
+
+  const getWidthIcon = () => {
+    switch (width) {
+      case 'wide': return <Maximize2 className="h-4 w-4" />
+      case 'full': return <Square className="h-4 w-4" />
+      default: return <Minimize2 className="h-4 w-4" />
+    }
+  }
+
+  const getWidthClasses = () => {
+    switch (width) {
+      case 'wide': return 'block-width-wide'
+      case 'full': return 'block-width-full'
+      default: return ''
+    }
+  }
 
   const updateCell = (rowId: string, colId: string, value: string) => {
     const newRows = rows.map(row =>
@@ -102,7 +129,7 @@ const SimpleDatabaseComponent = ({ node, updateAttributes, deleteNode }: SimpleD
   return (
     <NodeViewWrapper>
       <div
-        className="my-4 rounded-lg border border-border overflow-hidden"
+        className={`my-4 rounded-lg border border-border overflow-hidden ${getWidthClasses()}`}
         contentEditable={false}
         data-testid="database-block"
       >
@@ -129,7 +156,16 @@ const SimpleDatabaseComponent = ({ node, updateAttributes, deleteNode }: SimpleD
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={cycleWidth}
+              title={`Width: ${width}`}
+              className="px-2"
+            >
+              {getWidthIcon()}
+            </Button>
             <Button size="sm" variant="ghost" onClick={addColumn}>
               <Plus className="h-3 w-3 mr-1" />
               Column
@@ -233,6 +269,11 @@ export const SimpleDatabase = Node.create({
       },
       title: {
         default: 'Database',
+      },
+      width: {
+        default: 'normal',
+        parseHTML: element => element.getAttribute('data-width') || 'normal',
+        renderHTML: attributes => ({ 'data-width': attributes.width }),
       },
     }
   },
