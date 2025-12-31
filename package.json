@@ -1,6 +1,13 @@
 {
   "name": "scrivenry",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "description": "Self-hosted documentation platform with block-based editing",
+  "author": "Fintonlabs <hello@fintonlabs.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justynroberts/scrivenry"
+  },
   "private": true,
   "main": "electron/main.js",
   "scripts": {
