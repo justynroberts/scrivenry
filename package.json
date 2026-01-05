@@ -111,8 +111,9 @@
     "wait-on": "^9.0.3"
   },
   "build": {
-    "appId": "com.scrivenry.app",
+    "appId": "com.fintonlabs.scrivenry",
     "productName": "Scrivenry",
+    "copyright": "Copyright 2025 Fintonlabs",
     "npmRebuild": false,
     "directories": {
       "output": "dist-electron",
