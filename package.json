@@ -149,9 +149,12 @@
           "arch": ["arm64"]
         }
       ],
-      "identity": null,
-      "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "identity": "Justyn Roberts (2H574B6N62)",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "electron/resources/entitlements.mac.plist",
+      "entitlementsInherit": "electron/resources/entitlements.mac.plist",
+      "notarize": true
     },
     "win": {
       "icon": "electron/resources/icon.png",

@@ -10,10 +10,11 @@ Download the latest version for your platform:
 
 | Platform | Download |
 |----------|----------|
-| macOS (Apple Silicon) | [Scrivenry-0.1.0-arm64.dmg](https://github.com/justynroberts/scrivenry/releases/latest) |
-| Windows | [Scrivenry-Setup-0.1.0.exe](https://github.com/justynroberts/scrivenry/releases/latest) |
-| Linux (AppImage) | [Scrivenry-0.1.0.AppImage](https://github.com/justynroberts/scrivenry/releases/latest) |
-| Linux (Debian) | [scrivenry_0.1.0_amd64.deb](https://github.com/justynroberts/scrivenry/releases/latest) |
+| macOS (Apple Silicon) | [Scrivenry-0.1.2-arm64.dmg](https://github.com/justynroberts/scrivenry/releases/latest) |
+| Windows | Coming soon |
+| Linux | Coming soon |
+
+The macOS release is **code-signed and notarized** by Apple - no security warnings when installing.
 
 Or visit the [Releases page](https://github.com/justynroberts/scrivenry/releases) for all versions.
 
@@ -21,12 +22,14 @@ Or visit the [Releases page](https://github.com/justynroberts/scrivenry/releases
 
 - **Block-based Editor** - Type `/` to insert headings, lists, code blocks, tables, charts, and more
 - **Nested Pages** - Organize your content with unlimited page hierarchy
+- **Executable Python Blocks** - Run Python code directly in your documents with package support (NumPy, Pandas, etc.)
 - **Animated Covers** - 21 beautiful animated backgrounds for your pages
 - **Dark Mode** - Easy on the eyes, always
 - **Local Storage** - All data stored in SQLite on your machine
 - **Keyboard Shortcuts** - `Cmd+K` search, `Cmd+/` shortcuts, `Cmd+.` zen mode
 - **Export** - Export pages as Markdown or HTML
 - **Tags & Favorites** - Organize and quickly access your pages
+- **Window State** - Remembers your window position, size, and zoom level
 
 ## Getting Started
 
@@ -56,11 +59,15 @@ Or visit the [Releases page](https://github.com/justynroberts/scrivenry/releases
 - Bullet and numbered lists
 - Task lists with checkboxes
 - Code blocks with syntax highlighting
+- Executable Python blocks with package installation
 - Tables
 - Blockquotes
+- Callouts
 - Dividers
 - Mermaid diagrams
 - Charts
+- Timelines
+- Ratings
 
 ## Screenshots
 
