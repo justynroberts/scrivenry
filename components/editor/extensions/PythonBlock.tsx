@@ -3,7 +3,7 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react'
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Code2, Play, Trash2, Copy, Check, RotateCcw, Terminal, Eye, EyeOff, Sparkles, X, Send } from 'lucide-react'
+import { Code2, Play, Trash2, Copy, Check, RotateCcw, Terminal, Eye, EyeOff, Sparkles, X, Send, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -15,6 +15,7 @@ interface PythonBlockComponentProps {
       output?: string | null
       error?: string | null
       showOutput?: boolean
+      packages?: string | null
     }
   }
   updateAttributes: (attrs: Record<string, unknown>) => void
@@ -55,7 +56,7 @@ const loadPyodide = async () => {
 }
 
 const PythonBlockComponent = ({ node, updateAttributes, deleteNode }: PythonBlockComponentProps) => {
-  const { code, output, error, showOutput } = node.attrs
+  const { code, output, error, showOutput, packages } = node.attrs
   const [isEditing, setIsEditing] = useState(!code)
   const [input, setInput] = useState(code || '')
   const [currentOutput, setCurrentOutput] = useState(output || '')
@@ -66,7 +67,11 @@ const PythonBlockComponent = ({ node, updateAttributes, deleteNode }: PythonBloc
   const [aiPrompt, setAiPrompt] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [pyodideLoading, setPyodideLoading] = useState(false)
+  const [showPackages, setShowPackages] = useState(false)
+  const [packagesInput, setPackagesInput] = useState(packages || '')
+  const [installingPackages, setInstallingPackages] = useState(false)
   const pyodideRef = useRef<unknown>(null)
+  const installedPackagesRef = useRef<Set<string>>(new Set())
 
   const generateCode = useCallback(async () => {
     if (!aiPrompt.trim()) return
@@ -126,6 +131,42 @@ const PythonBlockComponent = ({ node, updateAttributes, deleteNode }: PythonBloc
     }
   }, [aiPrompt])
 
+  const installPackages = useCallback(async (pyodide: unknown, packageList: string[]) => {
+    if (packageList.length === 0) return
+
+    const py = pyodide as {
+      runPythonAsync: (code: string) => Promise<unknown>
+      loadPackage: (pkg: string | string[]) => Promise<void>
+    }
+
+    // Filter out already installed packages
+    const toInstall = packageList.filter(pkg => !installedPackagesRef.current.has(pkg))
+    if (toInstall.length === 0) return
+
+    setInstallingPackages(true)
+    setCurrentOutput(prev => prev + `Installing packages: ${toInstall.join(', ')}...\n`)
+
+    try {
+      // Load micropip first
+      await py.loadPackage('micropip')
+
+      // Install each package via micropip
+      for (const pkg of toInstall) {
+        await py.runPythonAsync(`
+import micropip
+await micropip.install('${pkg}')
+`)
+        installedPackagesRef.current.add(pkg)
+      }
+      setCurrentOutput(prev => prev + `Packages installed successfully.\n\n`)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      setCurrentOutput(prev => prev + `Package installation warning: ${errorMessage}\n\n`)
+    } finally {
+      setInstallingPackages(false)
+    }
+  }, [])
+
   const runCode = useCallback(async () => {
     if (!input.trim()) return
 
@@ -145,6 +186,13 @@ const PythonBlockComponent = ({ node, updateAttributes, deleteNode }: PythonBloc
         runPythonAsync: (code: string) => Promise<unknown>
         setStdout: (opts: { batched: (text: string) => void }) => void
         setStderr: (opts: { batched: (text: string) => void }) => void
+        loadPackage: (pkg: string | string[]) => Promise<void>
+      }
+
+      // Install packages if specified
+      if (packagesInput.trim()) {
+        const packageList = packagesInput.split(/[,\s]+/).map(p => p.trim()).filter(Boolean)
+        await installPackages(pyodide, packageList)
       }
 
       // Capture stdout
@@ -169,17 +217,17 @@ const PythonBlockComponent = ({ node, updateAttributes, deleteNode }: PythonBloc
         finalOutput += (finalOutput ? '\n' : '') + `=> ${result}`
       }
 
-      setCurrentOutput(finalOutput)
-      updateAttributes({ output: finalOutput, error: null })
+      setCurrentOutput(prev => prev + finalOutput)
+      updateAttributes({ output: finalOutput, error: null, packages: packagesInput })
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err)
       setCurrentError(errorMessage)
-      updateAttributes({ output: '', error: errorMessage })
+      updateAttributes({ output: '', error: errorMessage, packages: packagesInput })
     } finally {
       setIsRunning(false)
       setPyodideLoading(false)
     }
-  }, [input, updateAttributes])
+  }, [input, packagesInput, updateAttributes, installPackages])
 
   const handleSave = () => {
     updateAttributes({ code: input })
@@ -248,6 +296,9 @@ const PythonBlockComponent = ({ node, updateAttributes, deleteNode }: PythonBloc
               <span className="text-sm font-medium">Python</span>
             </div>
             <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" onClick={() => setShowPackages(!showPackages)} title="Manage packages" className={packagesInput ? 'text-green-400 hover:text-green-300' : 'text-muted-foreground hover:text-foreground'}>
+                <Package className="h-3 w-3" />
+              </Button>
               <Button size="sm" variant="ghost" onClick={() => setShowAiPrompt(!showAiPrompt)} title="AI Generate" className="text-purple-400 hover:text-purple-300">
                 <Sparkles className="h-3 w-3" />
               </Button>
@@ -259,6 +310,29 @@ const PythonBlockComponent = ({ node, updateAttributes, deleteNode }: PythonBloc
               </Button>
             </div>
           </div>
+
+          {/* Packages Input */}
+          {showPackages && (
+            <div className="px-3 py-2 bg-green-950/30 border-b border-green-500/30">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-green-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  value={packagesInput}
+                  onChange={(e) => setPackagesInput(e.target.value)}
+                  placeholder="numpy, pandas, requests (comma or space separated)"
+                  className="flex-1 bg-transparent text-sm text-gray-100 placeholder-gray-500 focus:outline-none"
+                  autoFocus
+                />
+                <Button size="sm" variant="ghost" onClick={() => setShowPackages(false)}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+              <p className="text-xs text-green-400/70 mt-1 ml-6">
+                Packages will be installed via micropip when you run the code
+              </p>
+            </div>
+          )}
 
           {/* AI Prompt */}
           {showAiPrompt && (
@@ -445,6 +519,9 @@ export const PythonBlock = Node.create({
       },
       showOutput: {
         default: true,
+      },
+      packages: {
+        default: null,
       },
     }
   },

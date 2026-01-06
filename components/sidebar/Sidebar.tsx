@@ -178,8 +178,8 @@ export function Sidebar({
 
   return (
     <div className="w-64 h-screen flex flex-col bg-card border-r" data-tour="sidebar">
-      {/* Workspace Header */}
-      <div className="p-3 border-b">
+      {/* Workspace Header - pt-8 provides clearance for macOS traffic lights */}
+      <div className="p-3 pt-8 border-b">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 w-full p-2 rounded-md hover:bg-accent transition-colors">

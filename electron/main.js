@@ -12,6 +12,54 @@ const APP_URL = `http://localhost:${PORT}`
 let mainWindow = null
 let serverProcess = null
 
+// Window state persistence
+const STATE_FILE = path.join(app.getPath('userData'), 'window-state.json')
+
+const DEFAULT_STATE = {
+  width: 1400,
+  height: 900,
+  x: undefined,
+  y: undefined,
+  zoomFactor: 1.0
+}
+
+function loadWindowState() {
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      const data = fs.readFileSync(STATE_FILE, 'utf8')
+      const state = JSON.parse(data)
+      // Validate the loaded state
+      if (state.width > 0 && state.height > 0) {
+        return { ...DEFAULT_STATE, ...state }
+      }
+    }
+  } catch (error) {
+    console.log('Could not load window state:', error.message)
+  }
+  return DEFAULT_STATE
+}
+
+function saveWindowState() {
+  if (!mainWindow) return
+
+  try {
+    const bounds = mainWindow.getBounds()
+    const zoomFactor = mainWindow.webContents.getZoomFactor()
+
+    const state = {
+      width: bounds.width,
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y,
+      zoomFactor: zoomFactor
+    }
+
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2))
+  } catch (error) {
+    console.log('Could not save window state:', error.message)
+  }
+}
+
 // Get paths for bundled resources
 function getResourcesPath() {
   if (app.isPackaged) {
@@ -21,23 +69,26 @@ function getResourcesPath() {
 }
 
 function getNodePath() {
-  if (DEV_MODE) {
+  if (!app.isPackaged) {
     // In dev mode, use system node
     return process.platform === 'win32' ? 'node.exe' : 'node'
   }
   // In production, use bundled node
   const nodePath = path.join(process.resourcesPath, 'node')
+  console.log('Looking for node at:', nodePath)
   if (fs.existsSync(nodePath)) {
+    console.log('Found bundled node')
     return nodePath
   }
+  console.log('Bundled node not found, using system node')
   // Fallback to system node
   return process.platform === 'win32' ? 'node.exe' : 'node'
 }
 
 function getAppPath() {
   if (app.isPackaged) {
-    // In packaged app, the app files are in app.asar
-    return path.join(process.resourcesPath, 'app.asar.unpacked')
+    // In packaged app without asar, files are in resources/app
+    return path.join(process.resourcesPath, 'app')
   }
   return path.join(__dirname, '..')
 }
@@ -110,10 +161,17 @@ async function startServer() {
   console.log(`Next bin: ${nextBin}`)
 
   // Set up environment for the server
+  const dataPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'data', 'scrivenry.db')
+    : path.join(appPath, 'data', 'scrivenry.db')
+
+  console.log(`Database path: ${dataPath}`)
+
   const serverEnv = {
     ...process.env,
     PORT: PORT.toString(),
-    NODE_ENV: 'production'
+    NODE_ENV: 'production',
+    DATABASE_URL: `file:${dataPath}`
   }
 
   // Use the bundled node to run next start
@@ -145,9 +203,11 @@ async function startServer() {
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+  const savedState = loadWindowState()
+
+  const windowOptions = {
+    width: savedState.width,
+    height: savedState.height,
     minWidth: 800,
     minHeight: 600,
     title: 'Scrivenry',
@@ -162,14 +222,33 @@ function createWindow() {
       spellcheck: true
     },
     show: false
-  })
+  }
+
+  // Restore position if saved
+  if (savedState.x !== undefined && savedState.y !== undefined) {
+    windowOptions.x = savedState.x
+    windowOptions.y = savedState.y
+  }
+
+  mainWindow = new BrowserWindow(windowOptions)
 
   mainWindow.once('ready-to-show', () => {
-    mainWindow.show()
-    if (DEV_MODE) {
-      mainWindow.webContents.openDevTools()
+    // Restore zoom level
+    if (savedState.zoomFactor && savedState.zoomFactor !== 1.0) {
+      mainWindow.webContents.setZoomFactor(savedState.zoomFactor)
     }
+    mainWindow.show()
   })
+
+  // Save state on resize and move (debounced)
+  let saveStateTimeout = null
+  const debouncedSave = () => {
+    if (saveStateTimeout) clearTimeout(saveStateTimeout)
+    saveStateTimeout = setTimeout(saveWindowState, 500)
+  }
+
+  mainWindow.on('resize', debouncedSave)
+  mainWindow.on('move', debouncedSave)
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://localhost') || url.startsWith(APP_URL)) {
@@ -184,6 +263,11 @@ function createWindow() {
       event.preventDefault()
       shell.openExternal(url)
     }
+  })
+
+  // Save state before window closes
+  mainWindow.on('close', () => {
+    saveWindowState()
   })
 
   mainWindow.on('closed', () => {

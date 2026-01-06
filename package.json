@@ -1,6 +1,6 @@
 {
   "name": "scrivenry",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Self-hosted documentation platform with block-based editing",
   "author": "Fintonlabs <hello@fintonlabs.com>",
   "license": "MIT",
@@ -139,10 +139,7 @@
         "to": "node"
       }
     ],
-    "asar": true,
-    "asarUnpack": [
-      "**/*"
-    ],
+    "asar": false,
     "mac": {
       "category": "public.app-category.productivity",
       "icon": "electron/resources/icon.icns",
