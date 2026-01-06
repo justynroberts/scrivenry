@@ -223,7 +223,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
           </div>
         ) : null}
 
-        <div className="max-w-3xl mx-auto px-8 py-6">
+        <div className={`max-w-3xl mx-auto px-8 py-6 ${page.cover ? '-mt-16 relative z-10' : ''}`}>
           {/* Breadcrumb */}
           {breadcrumb.length > 0 && (
             <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-4" data-testid="breadcrumb">
