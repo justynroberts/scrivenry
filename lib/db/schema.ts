@@ -134,6 +134,34 @@ export const apiKeys = sqliteTable('api_keys', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 })
 
+// Notifications - live notification system
+export const notifications = sqliteTable('notifications', {
+  id: text('id').primaryKey(), // ULID
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // 'page_created', 'page_updated', 'system', 'custom'
+  title: text('title').notNull(),
+  message: text('message'),
+
+  // Rich content
+  imageUrl: text('image_url'),
+  videoUrl: text('video_url'),
+  linkUrl: text('link_url'),
+  linkText: text('link_text'),
+  metadata: text('metadata', { mode: 'json' }).$type<Record<string, unknown>>().default({}),
+
+  // Related entities
+  pageId: text('page_id').references(() => pages.id, { onDelete: 'set null' }),
+
+  // Status: 'unread', 'read', 'snoozed', 'accepted', 'archived'
+  status: text('status').notNull().default('unread'),
+  snoozedUntil: integer('snoozed_until', { mode: 'timestamp' }),
+
+  // Timestamps
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  readAt: integer('read_at', { mode: 'timestamp' }),
+  archivedAt: integer('archived_at', { mode: 'timestamp' }),
+})
+
 // Types
 export type Workspace = typeof workspaces.$inferSelect
 export type NewWorkspace = typeof workspaces.$inferInsert
@@ -152,3 +180,5 @@ export type NewTag = typeof tags.$inferInsert
 export type PageTag = typeof pageTags.$inferSelect
 export type PublicShare = typeof publicShares.$inferSelect
 export type RecentView = typeof recentViews.$inferSelect
+export type Notification = typeof notifications.$inferSelect
+export type NewNotification = typeof notifications.$inferInsert

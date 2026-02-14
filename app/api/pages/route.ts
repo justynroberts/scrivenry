@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateRequest } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { pages } from '@/lib/db/schema'
+import { pages, notifications } from '@/lib/db/schema'
 import { eq, isNull, and, desc } from 'drizzle-orm'
 import { ulid } from 'ulid'
 
@@ -101,6 +101,20 @@ export async function POST(request: NextRequest) {
       createdBy: user.id,
       lastEditedBy: user.id,
     }).returning()
+
+    // Create notification for page creation
+    await db.insert(notifications).values({
+      id: ulid(),
+      userId: user.id,
+      type: 'page_created',
+      title: 'New page created',
+      message: `"${newPage.title}" was created`,
+      pageId: newPage.id,
+      linkUrl: `/page/${newPage.id}`,
+      linkText: 'View page',
+      status: 'unread',
+      createdAt: now,
+    })
 
     return NextResponse.json({ page: newPage })
   } catch (error) {

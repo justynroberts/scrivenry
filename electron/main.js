@@ -1,8 +1,9 @@
-const { app, BrowserWindow, shell, Menu, dialog } = require('electron')
+const { app, BrowserWindow, shell, Menu, dialog, ipcMain } = require('electron')
 const path = require('path')
 const { spawn } = require('child_process')
 const net = require('net')
 const fs = require('fs')
+const http = require('http')
 
 // Configuration
 const DEV_MODE = process.env.NODE_ENV !== 'production'
@@ -310,6 +311,17 @@ function createMenu() {
           }
         },
         { type: 'separator' },
+        {
+          label: 'Backup Data...',
+          accelerator: 'CmdOrCtrl+Shift+B',
+          click: createBackup
+        },
+        {
+          label: 'Restore from Backup...',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: restoreBackup
+        },
+        { type: 'separator' },
         isMac ? { role: 'close' } : { role: 'quit' }
       ]
     },
@@ -425,3 +437,140 @@ app.on('before-quit', () => {
 process.on('uncaughtException', (error) => {
   console.error('Uncaught exception:', error)
 })
+
+// Backup functionality
+async function createBackup() {
+  try {
+    // Get session cookie from webContents
+    const cookies = await mainWindow.webContents.session.cookies.get({ url: APP_URL })
+    const sessionCookie = cookies.find(c => c.name === 'auth_session')
+
+    if (!sessionCookie) {
+      dialog.showErrorBox('Backup Error', 'You must be logged in to create a backup.')
+      return
+    }
+
+    const response = await new Promise((resolve, reject) => {
+      const req = http.get(`${APP_URL}/api/backup`, {
+        headers: {
+          'Cookie': `auth_session=${sessionCookie.value}`
+        }
+      }, (res) => {
+        let data = ''
+        res.on('data', chunk => data += chunk)
+        res.on('end', () => resolve({ status: res.statusCode, data }))
+      })
+      req.on('error', reject)
+      req.setTimeout(30000, () => {
+        req.destroy()
+        reject(new Error('Request timeout'))
+      })
+    })
+
+    if (response.status !== 200) {
+      throw new Error(`Server returned ${response.status}`)
+    }
+
+    const { filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Backup',
+      defaultPath: `scrivenry-backup-${new Date().toISOString().split('T')[0]}.json`,
+      filters: [{ name: 'JSON Files', extensions: ['json'] }]
+    })
+
+    if (filePath) {
+      fs.writeFileSync(filePath, response.data)
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Backup Complete',
+        message: 'Your backup has been saved successfully.',
+        detail: `Location: ${filePath}`
+      })
+    }
+  } catch (error) {
+    console.error('Backup error:', error)
+    dialog.showErrorBox('Backup Error', `Failed to create backup: ${error.message}`)
+  }
+}
+
+async function restoreBackup() {
+  try {
+    const { filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select Backup File',
+      filters: [{ name: 'JSON Files', extensions: ['json'] }],
+      properties: ['openFile']
+    })
+
+    if (!filePaths || filePaths.length === 0) return
+
+    const backupData = fs.readFileSync(filePaths[0], 'utf8')
+
+    // Validate it's a valid JSON backup
+    const parsed = JSON.parse(backupData)
+    if (!parsed.version || !parsed.data) {
+      throw new Error('Invalid backup file format')
+    }
+
+    const { response: confirm } = await dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      title: 'Confirm Restore',
+      message: 'Are you sure you want to restore from this backup?',
+      detail: `This will replace ALL current data with the backup from ${parsed.exportedAt}.\n\nStats:\n- ${parsed.stats?.pages || 0} pages\n- ${parsed.stats?.users || 0} users\n\nThis action cannot be undone.`,
+      buttons: ['Cancel', 'Restore'],
+      defaultId: 0,
+      cancelId: 0
+    })
+
+    if (confirm !== 1) return
+
+    // Get session cookie
+    const cookies = await mainWindow.webContents.session.cookies.get({ url: APP_URL })
+    const sessionCookie = cookies.find(c => c.name === 'auth_session')
+
+    if (!sessionCookie) {
+      dialog.showErrorBox('Restore Error', 'You must be logged in to restore a backup.')
+      return
+    }
+
+    const response = await new Promise((resolve, reject) => {
+      const postData = backupData
+      const req = http.request(`${APP_URL}/api/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
+          'Cookie': `auth_session=${sessionCookie.value}`
+        }
+      }, (res) => {
+        let data = ''
+        res.on('data', chunk => data += chunk)
+        res.on('end', () => resolve({ status: res.statusCode, data }))
+      })
+      req.on('error', reject)
+      req.setTimeout(60000, () => {
+        req.destroy()
+        reject(new Error('Request timeout'))
+      })
+      req.write(postData)
+      req.end()
+    })
+
+    const result = JSON.parse(response.data)
+
+    if (response.status !== 200) {
+      throw new Error(result.error || 'Unknown error')
+    }
+
+    await dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Restore Complete',
+      message: 'Your backup has been restored successfully.',
+      detail: `Restored:\n- ${result.stats.pages} pages\n- ${result.stats.workspaces} workspaces\n- ${result.stats.users} users\n\nNote: ${result.note}`
+    })
+
+    // Reload the window
+    mainWindow.reload()
+  } catch (error) {
+    console.error('Restore error:', error)
+    dialog.showErrorBox('Restore Error', `Failed to restore backup: ${error.message}`)
+  }
+}

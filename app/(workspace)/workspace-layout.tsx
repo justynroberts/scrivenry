@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { SearchDialog } from '@/components/SearchDialog'
 import { WelcomeTour } from '@/components/WelcomeTour'
+import { NotificationPanel, NotificationToggle } from '@/components/notifications/NotificationPanel'
 import { PageProvider, usePages } from '@/lib/contexts/PageContext'
 import type { Page } from '@/lib/db/schema'
 
@@ -25,6 +26,8 @@ function WorkspaceContent({
   const [searchOpen, setSearchOpen] = useState(false)
   const [favorites, setFavorites] = useState<Page[]>([])
   const [showTour, setShowTour] = useState(false)
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
 
   // Check if tour should be shown (from database)
   useEffect(() => {
@@ -114,12 +117,37 @@ function WorkspaceContent({
     }
   }, [router, addPage])
 
-  // Keyboard shortcut for search
+  // Fetch unread notifications count
+  useEffect(() => {
+    async function fetchUnreadCount() {
+      try {
+        const res = await fetch('/api/notifications?status=unread&limit=1')
+        if (res.ok) {
+          const data = await res.json()
+          setUnreadNotifications(data.unread_count || 0)
+        }
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error)
+      }
+    }
+    fetchUnreadCount()
+    // Poll every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K for search
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setSearchOpen(true)
+      }
+      // Cmd/Ctrl + Shift + N for notifications
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'n') {
+        e.preventDefault()
+        setNotificationPanelOpen(prev => !prev)
       }
     }
 
@@ -141,6 +169,21 @@ function WorkspaceContent({
       <main className="flex-1 overflow-auto">
         {children}
       </main>
+
+      {/* Notification toggle button - fixed position */}
+      <div className="fixed top-4 right-4 z-40">
+        <NotificationToggle
+          onClick={() => setNotificationPanelOpen(true)}
+          unreadCount={unreadNotifications}
+        />
+      </div>
+
+      {/* Notification Panel */}
+      <NotificationPanel
+        isOpen={notificationPanelOpen}
+        onClose={() => setNotificationPanelOpen(false)}
+      />
+
       <SearchDialog
         open={searchOpen}
         onOpenChange={setSearchOpen}
