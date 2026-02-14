@@ -40,7 +40,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   ]
 }`,
         example: {
-          curl: `curl -X GET "http://localhost:3847/api/v1/pages" \\
+          curl: `curl -X GET "http://oracle.local:9009/api/v1/pages" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{
   "pages": [
@@ -80,7 +80,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   "createdAt": "2024-01-01T00:00:00Z"
 }`,
         example: {
-          curl: `curl -X POST "http://localhost:3847/api/v1/pages" \\
+          curl: `curl -X POST "http://oracle.local:9009/api/v1/pages" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"title": "My New Page", "icon": "📝"}'`,
@@ -109,7 +109,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   "updatedAt": "2024-01-01T00:00:00Z"
 }`,
         example: {
-          curl: `curl -X GET "http://localhost:3847/api/v1/pages/01KDGZCSHCPVSXXH41V6FS3Y84" \\
+          curl: `curl -X GET "http://oracle.local:9009/api/v1/pages/01KDGZCSHCPVSXXH41V6FS3Y84" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{
   "id": "01KDGZCSHCPVSXXH41V6FS3Y84",
@@ -135,7 +135,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   "updatedAt": "2024-01-01T00:00:00Z"
 }`,
         example: {
-          curl: `curl -X PATCH "http://localhost:3847/api/v1/pages/01KDGZCSHCPVSXXH41V6FS3Y84" \\
+          curl: `curl -X PATCH "http://oracle.local:9009/api/v1/pages/01KDGZCSHCPVSXXH41V6FS3Y84" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"title": "New Title"}'`,
@@ -152,7 +152,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
         auth: true,
         responseBody: `{ "success": true }`,
         example: {
-          curl: `curl -X DELETE "http://localhost:3847/api/v1/pages/01KDGZCSHCPVSXXH41V6FS3Y84" \\
+          curl: `curl -X DELETE "http://oracle.local:9009/api/v1/pages/01KDGZCSHCPVSXXH41V6FS3Y84" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{ "success": true }`
         }
@@ -178,7 +178,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   ]
 }`,
         example: {
-          curl: `curl -X GET "http://localhost:3847/api/v1/search?q=getting%20started" \\
+          curl: `curl -X GET "http://oracle.local:9009/api/v1/search?q=getting%20started" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{
   "results": [
@@ -211,7 +211,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   "exportedAt": "2024-01-01T00:00:00Z"
 }`,
         example: {
-          curl: `curl -X GET "http://localhost:3847/api/workspace/export" \\
+          curl: `curl -X GET "http://oracle.local:9009/api/workspace/export" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -o workspace-backup.json`,
           response: `{
@@ -233,7 +233,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   "updatedAt": "2024-01-01T00:00:00Z"
 }`,
         example: {
-          curl: `curl -X PATCH "http://localhost:3847/api/workspace" \\
+          curl: `curl -X PATCH "http://oracle.local:9009/api/workspace" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"name": "My Renamed Workspace"}'`,
@@ -277,7 +277,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   "next_cursor": null
 }`,
         example: {
-          curl: `curl -X GET "http://localhost:9009/api/v1/notifications?status=unread&limit=10" \\
+          curl: `curl -X GET "http://oracle.local:9009/api/v1/notifications?status=unread&limit=10" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{
   "notifications": [
@@ -321,7 +321,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   }
 }`,
         example: {
-          curl: `curl -X POST "http://localhost:9009/api/v1/notifications" \\
+          curl: `curl -X POST "http://oracle.local:9009/api/v1/notifications" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -362,7 +362,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   "archived_at": null
 }`,
         example: {
-          curl: `curl -X GET "http://localhost:9009/api/v1/notifications/01NOTIF123" \\
+          curl: `curl -X GET "http://oracle.local:9009/api/v1/notifications/01NOTIF123" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{
   "id": "01NOTIF123",
@@ -394,7 +394,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   "snoozed_until": "2024-01-15T10:00:00Z"
 }`,
         example: {
-          curl: `curl -X PATCH "http://localhost:9009/api/v1/notifications/01NOTIF123" \\
+          curl: `curl -X PATCH "http://oracle.local:9009/api/v1/notifications/01NOTIF123" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"action": "accept"}'`,
@@ -411,7 +411,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
         auth: true,
         responseBody: `{ "success": true }`,
         example: {
-          curl: `curl -X DELETE "http://localhost:9009/api/v1/notifications/01NOTIF123" \\
+          curl: `curl -X DELETE "http://oracle.local:9009/api/v1/notifications/01NOTIF123" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{ "success": true }`
         }
@@ -528,7 +528,7 @@ export default function APIDocsPage() {
       {/* Base URL */}
       <div className="mb-8 p-6 rounded-lg border bg-card">
         <h2 className="text-lg font-medium mb-3">Base URL</h2>
-        <CodeBlock code={`http://localhost:3847`} />
+        <CodeBlock code={`http://oracle.local:9009`} />
       </div>
 
       {/* Endpoints */}
