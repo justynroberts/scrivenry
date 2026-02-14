@@ -64,12 +64,25 @@ export default async function Page({ params }: PageProps) {
     }
   }
 
+  // Serialize dates for client component
+  const serializedPage = {
+    ...page,
+    createdAt: page.createdAt.toISOString(),
+    updatedAt: page.updatedAt.toISOString(),
+    deletedAt: null as string | null, // Always null here since we check deletedAt above
+  }
+
+  const serializedTags = initialTags.map(tag => ({
+    ...tag,
+    createdAt: tag.createdAt.toISOString(),
+  }))
+
   return (
     <PageEditor
-      page={page}
+      page={serializedPage as any}
       breadcrumb={breadcrumb}
       isFavorite={isFavorite}
-      initialTags={initialTags}
+      initialTags={serializedTags as any}
     />
   )
 }

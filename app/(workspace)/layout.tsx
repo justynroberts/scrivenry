@@ -27,9 +27,17 @@ export default async function Layout({
     orderBy: (pages, { asc }) => [asc(pages.position)],
   })
 
+  // Serialize dates for client component
+  const serializedPages = allPages.map(page => ({
+    ...page,
+    createdAt: page.createdAt.toISOString(),
+    updatedAt: page.updatedAt.toISOString(),
+    deletedAt: page.deletedAt ? page.deletedAt.toISOString() : null,
+  }))
+
   return (
     <WorkspaceLayout
-      pages={allPages}
+      pages={serializedPages as any}
       workspaceName={workspace.name}
       workspaceId={workspace.id}
     >
