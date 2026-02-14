@@ -251,31 +251,33 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
       {
         method: 'GET',
         path: '/api/v1/notifications',
-        description: 'List notifications. Filter by status with ?status=unread|read|archived|active',
+        description: 'List notifications. Filter by status: unread, read, snoozed, accepted, archived, active (non-archived)',
         auth: true,
         responseBody: `{
   "notifications": [
     {
       "id": "01ABC123...",
-      "type": "page_created",
+      "type": "page_created",  // page_created, feature, alert, system, custom
       "title": "New page created",
-      "message": "\"My Page\" was created",
+      "message": "\"My Page\" was created via API",
       "image_url": null,
       "video_url": null,
       "link_url": "/page/01XYZ...",
       "link_text": "View page",
       "page_id": "01XYZ...",
-      "status": "unread",
+      "status": "unread",  // unread, read, snoozed, accepted
       "snoozed_until": null,
       "created_at": "2024-01-01T00:00:00Z",
       "read_at": null,
       "archived_at": null
     }
   ],
-  "unread_count": 5
+  "unread_count": 5,
+  "has_more": false,
+  "next_cursor": null
 }`,
         example: {
-          curl: `curl -X GET "http://localhost:3847/api/v1/notifications?status=unread" \\
+          curl: `curl -X GET "http://localhost:9009/api/v1/notifications?status=unread&limit=10" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{
   "notifications": [
@@ -283,6 +285,7 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
       "id": "01NOTIF123",
       "type": "page_created",
       "title": "New page created",
+      "message": "\\"API Doc\\" was created via API",
       "status": "unread",
       "created_at": "2024-12-28T10:00:00Z"
     }
@@ -294,58 +297,63 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
       {
         method: 'POST',
         path: '/api/v1/notifications',
-        description: 'Create a notification with optional rich content (images, video, links)',
+        description: 'Create a notification. Types: page_created (green), feature (purple), alert (red), system (gray), custom (blue). Supports rich content.',
         auth: true,
         requestBody: `{
-  "title": "New Feature Released",
-  "message": "Check out our new notification system!",
-  "type": "custom",
-  "image_url": "https://example.com/image.jpg",
-  "video_url": "https://example.com/video.mp4",
-  "link_url": "/page/abc123",
-  "link_text": "View Details",
-  "page_id": "01ABC123...",
-  "metadata": { "custom_field": "value" }
+  "title": "New Feature Released",      // required
+  "message": "Check out the new UI!",   // optional
+  "type": "feature",                    // optional, default: custom
+  "image_url": "https://...",           // optional, displayed inline
+  "video_url": "https://...",           // optional, mp4/webm embedded
+  "link_url": "/page/abc123",           // optional, click action
+  "link_text": "View Details",          // optional
+  "page_id": "01ABC123...",             // optional, link to page
+  "metadata": { "key": "value" }        // optional, custom data
 }`,
         responseBody: `{
-  "id": "01NOTIF123...",
-  "title": "New Feature Released",
-  "message": "Check out our new notification system!",
-  "type": "custom",
-  "status": "unread",
-  "created_at": "2024-01-01T00:00:00Z"
+  "notification": {
+    "id": "01NOTIF123...",
+    "type": "feature",
+    "title": "New Feature Released",
+    "message": "Check out the new UI!",
+    "status": "unread",
+    "created_at": "2024-01-01T00:00:00Z"
+  }
 }`,
         example: {
-          curl: `curl -X POST "http://localhost:3847/api/v1/notifications" \\
+          curl: `curl -X POST "http://localhost:9009/api/v1/notifications" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "title": "Reminder",
-    "message": "Review the Q4 report",
-    "link_url": "/page/01REPORT123",
-    "link_text": "Open Report"
+    "title": "Deploy Complete",
+    "message": "v2.0 is now live!",
+    "type": "feature",
+    "link_url": "/changelog"
   }'`,
           response: `{
-  "id": "01NOTIF456",
-  "title": "Reminder",
-  "status": "unread"
+  "notification": {
+    "id": "01NOTIF456",
+    "type": "feature",
+    "title": "Deploy Complete",
+    "status": "unread"
+  }
 }`
         }
       },
       {
         method: 'GET',
         path: '/api/v1/notifications/:id',
-        description: 'Get a specific notification by ID',
+        description: 'Get a specific notification by ID with all fields',
         auth: true,
         responseBody: `{
   "id": "01NOTIF123...",
-  "type": "custom",
-  "title": "Reminder",
-  "message": "Review the Q4 report",
+  "type": "alert",
+  "title": "Action Required",
+  "message": "Please review pending changes",
   "image_url": null,
   "video_url": null,
-  "link_url": "/page/01REPORT123",
-  "link_text": "Open Report",
+  "link_url": "/settings",
+  "link_text": "Review",
   "page_id": null,
   "status": "unread",
   "snoozed_until": null,
@@ -354,11 +362,12 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
   "archived_at": null
 }`,
         example: {
-          curl: `curl -X GET "http://localhost:3847/api/v1/notifications/01NOTIF123" \\
+          curl: `curl -X GET "http://localhost:9009/api/v1/notifications/01NOTIF123" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{
   "id": "01NOTIF123",
-  "title": "Reminder",
+  "type": "alert",
+  "title": "Action Required",
   "status": "unread"
 }`
         }
@@ -366,14 +375,15 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
       {
         method: 'PATCH',
         path: '/api/v1/notifications/:id',
-        description: 'Update notification status. Actions: read, snooze, accept, archive, unarchive',
+        description: 'Update status. Actions: read, snooze (with snoozed_until), accept, archive, unarchive',
         auth: true,
-        requestBody: `{
+        requestBody: `// Snooze for 1 hour:
+{
   "action": "snooze",
-  "snoozed_until": "2024-01-15T09:00:00Z"
+  "snoozed_until": "2024-01-15T10:00:00Z"
 }
 
-// Or simply:
+// Other actions (no additional params):
 { "action": "read" }
 { "action": "accept" }
 { "action": "archive" }
@@ -381,28 +391,27 @@ const endpoints: { category: string; items: Endpoint[] }[] = [
         responseBody: `{
   "id": "01NOTIF123...",
   "status": "snoozed",
-  "snoozed_until": "2024-01-15T09:00:00Z"
+  "snoozed_until": "2024-01-15T10:00:00Z"
 }`,
         example: {
-          curl: `curl -X PATCH "http://localhost:3847/api/v1/notifications/01NOTIF123" \\
+          curl: `curl -X PATCH "http://localhost:9009/api/v1/notifications/01NOTIF123" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"action": "archive"}'`,
+  -d '{"action": "accept"}'`,
           response: `{
   "id": "01NOTIF123",
-  "status": "archived",
-  "archived_at": "2024-12-28T12:00:00Z"
+  "status": "accepted"
 }`
         }
       },
       {
         method: 'DELETE',
         path: '/api/v1/notifications/:id',
-        description: 'Permanently delete a notification',
+        description: 'Permanently delete a notification (cannot be recovered)',
         auth: true,
         responseBody: `{ "success": true }`,
         example: {
-          curl: `curl -X DELETE "http://localhost:3847/api/v1/notifications/01NOTIF123" \\
+          curl: `curl -X DELETE "http://localhost:9009/api/v1/notifications/01NOTIF123" \\
   -H "Authorization: Bearer YOUR_API_KEY"`,
           response: `{ "success": true }`
         }

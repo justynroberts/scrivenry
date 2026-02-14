@@ -132,10 +132,14 @@ export async function POST(request: NextRequest) {
       const parent = await db.query.pages.findFirst({
         where: eq(pages.id, parent_id),
       })
-      if (parent) {
-        path = [...(parent.path || []), parent.id]
-        depth = (parent.depth || 0) + 1
+      if (!parent) {
+        return NextResponse.json(
+          { error: 'Bad request', message: 'parent_id does not exist' },
+          { status: 400 }
+        )
       }
+      path = [...(parent.path || []), parent.id]
+      depth = (parent.depth || 0) + 1
     }
 
     // Get position
@@ -170,18 +174,23 @@ export async function POST(request: NextRequest) {
     }).returning()
 
     // Create notification for API-created page
-    await db.insert(notifications).values({
-      id: ulid(),
-      userId: auth.userId,
-      type: 'page_created',
-      title: 'New page created',
-      message: `"${newPage.title}" was created via API`,
-      pageId: newPage.id,
-      linkUrl: `/page/${newPage.id}`,
-      linkText: 'View page',
-      status: 'unread',
-      createdAt: now,
-    })
+    try {
+      await db.insert(notifications).values({
+        id: ulid(),
+        userId: auth.userId,
+        type: 'page_created',
+        title: 'New page created',
+        message: `"${newPage.title}" was created via API`,
+        pageId: newPage.id,
+        linkUrl: `/page/${newPage.id}`,
+        linkText: 'View page',
+        status: 'unread',
+        createdAt: now,
+      })
+    } catch (notifError) {
+      console.error('Failed to create notification:', notifError)
+      // Don't fail the request if notification creation fails
+    }
 
     return NextResponse.json({
       page: {
