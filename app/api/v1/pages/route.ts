@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { pages, apiKeys } from '@/lib/db/schema'
+import { pages, apiKeys, notifications } from '@/lib/db/schema'
 import { eq, isNull, and, desc } from 'drizzle-orm'
 import { ulid } from 'ulid'
 import { createHash } from 'crypto'
@@ -168,6 +168,20 @@ export async function POST(request: NextRequest) {
       createdBy: auth.userId,
       lastEditedBy: auth.userId,
     }).returning()
+
+    // Create notification for API-created page
+    await db.insert(notifications).values({
+      id: ulid(),
+      userId: auth.userId,
+      type: 'page_created',
+      title: 'New page created',
+      message: `"${newPage.title}" was created via API`,
+      pageId: newPage.id,
+      linkUrl: `/page/${newPage.id}`,
+      linkText: 'View page',
+      status: 'unread',
+      createdAt: now,
+    })
 
     return NextResponse.json({
       page: {
