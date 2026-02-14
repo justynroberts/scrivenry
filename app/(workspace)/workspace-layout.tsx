@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { SearchDialog } from '@/components/SearchDialog'
@@ -28,6 +28,7 @@ function WorkspaceContent({
   const [showTour, setShowTour] = useState(false)
   const [notificationPanelOpen, setNotificationPanelOpen] = useState(false)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
+  const prevUnreadRef = useRef<number | null>(null)
 
   // Check if tour should be shown (from database)
   useEffect(() => {
@@ -117,22 +118,30 @@ function WorkspaceContent({
     }
   }, [router, addPage])
 
-  // Fetch unread notifications count
+  // Fetch unread notifications count and auto-open panel on new notifications
   useEffect(() => {
     async function fetchUnreadCount() {
       try {
         const res = await fetch('/api/notifications?status=unread&limit=1')
         if (res.ok) {
           const data = await res.json()
-          setUnreadNotifications(data.unread_count || 0)
+          const newCount = data.unread_count || 0
+
+          // Auto-open panel if new notification arrived (count increased)
+          if (prevUnreadRef.current !== null && newCount > prevUnreadRef.current) {
+            setNotificationPanelOpen(true)
+          }
+
+          prevUnreadRef.current = newCount
+          setUnreadNotifications(newCount)
         }
       } catch (error) {
         console.error('Failed to fetch notifications:', error)
       }
     }
     fetchUnreadCount()
-    // Poll every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000)
+    // Poll every 5 seconds for faster notification detection
+    const interval = setInterval(fetchUnreadCount, 5000)
     return () => clearInterval(interval)
   }, [])
 
