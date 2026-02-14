@@ -15,6 +15,13 @@
       "when": 1766958172294,
       "tag": "0001_sloppy_ravenous",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1771083017791,
+      "tag": "0002_sparkling_dust",
+      "breakpoints": true
     }
   ]
 }

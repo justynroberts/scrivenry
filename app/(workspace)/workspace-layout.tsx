@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { SearchDialog } from '@/components/SearchDialog'
 import { WelcomeTour } from '@/components/WelcomeTour'
-import { NotificationPanel, NotificationToggle } from '@/components/notifications/NotificationPanel'
+import { NotificationPanel, NotificationToggle, getAutoOpenEnabled } from '@/components/notifications/NotificationPanel'
 import { PageProvider, usePages } from '@/lib/contexts/PageContext'
 import type { Page } from '@/lib/db/schema'
 
@@ -127,8 +127,8 @@ function WorkspaceContent({
           const data = await res.json()
           const newCount = data.unread_count || 0
 
-          // Auto-open panel if new notification arrived (count increased)
-          if (prevUnreadRef.current !== null && newCount > prevUnreadRef.current) {
+          // Auto-open panel if new notification arrived (count increased) and setting enabled
+          if (prevUnreadRef.current !== null && newCount > prevUnreadRef.current && getAutoOpenEnabled()) {
             setNotificationPanelOpen(true)
           }
 

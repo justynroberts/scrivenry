@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Clock, Check, Archive, X, ExternalLink, Play } from 'lucide-react'
+import { Clock, Check, Archive, ExternalLink, Play, FileText, Bell, Info, AlertCircle, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
@@ -11,6 +11,43 @@ import type { Notification } from '@/lib/db/schema'
 interface NotificationCardProps {
   notification: Notification
   onAction: (id: string, action: string, data?: Record<string, unknown>) => Promise<void>
+}
+
+function getNotificationIcon(type: string) {
+  switch (type) {
+    case 'page_created':
+    case 'page_updated':
+      return FileText
+    case 'system':
+      return Info
+    case 'alert':
+      return AlertCircle
+    case 'feature':
+      return Sparkles
+    default:
+      return Bell
+  }
+}
+
+function getSnoozeOptions(): { label: string; getTime: () => Date }[] {
+  return [
+    {
+      label: '1 hour',
+      getTime: () => new Date(Date.now() + 60 * 60 * 1000),
+    },
+    {
+      label: '4 hours',
+      getTime: () => new Date(Date.now() + 4 * 60 * 60 * 1000),
+    },
+    {
+      label: 'End of today',
+      getTime: () => {
+        const today = new Date()
+        today.setHours(23, 59, 59, 999)
+        return today
+      },
+    },
+  ]
 }
 
 function formatTimeAgo(date: Date | string | number): string {
@@ -38,8 +75,6 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [snoozeOpen, setSnoozeOpen] = useState(false)
-  const [snoozeDate, setSnoozeDate] = useState('')
-  const [snoozeTime, setSnoozeTime] = useState('')
 
   const handleAction = async (action: string, data?: Record<string, unknown>) => {
     setIsLoading(true)
@@ -50,9 +85,8 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
     }
   }
 
-  const handleSnooze = async () => {
-    if (!snoozeDate || !snoozeTime) return
-    const snoozedUntil = new Date(`${snoozeDate}T${snoozeTime}`)
+  const handleSnooze = async (getTime: () => Date) => {
+    const snoozedUntil = getTime()
     await handleAction('snooze', { snoozedUntil: snoozedUntil.toISOString() })
     setSnoozeOpen(false)
   }
@@ -67,6 +101,7 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
   }
 
   const isArchived = !!notification.archivedAt
+  const Icon = getNotificationIcon(notification.type)
 
   return (
     <div
@@ -77,7 +112,10 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
       )}
     >
       {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="flex items-start gap-3 mb-2">
+        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <Icon className="w-4 h-4 text-primary" />
+        </div>
         <div
           className={cn('flex-1 cursor-pointer', notification.linkUrl && 'hover:underline')}
           onClick={handleClick}
@@ -165,30 +203,20 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
               Snooze
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-3">
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Snooze until</p>
-              <input
-                type="date"
-                value={snoozeDate}
-                onChange={(e) => setSnoozeDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full px-2 py-1 text-sm border rounded bg-background"
-              />
-              <input
-                type="time"
-                value={snoozeTime}
-                onChange={(e) => setSnoozeTime(e.target.value)}
-                className="w-full px-2 py-1 text-sm border rounded bg-background"
-              />
-              <Button
-                size="sm"
-                className="w-full"
-                onClick={handleSnooze}
-                disabled={!snoozeDate || !snoozeTime}
-              >
-                Confirm
-              </Button>
+          <PopoverContent className="w-40 p-2">
+            <div className="space-y-1">
+              {getSnoozeOptions().map((option) => (
+                <Button
+                  key={option.label}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start h-8 text-xs"
+                  onClick={() => handleSnooze(option.getTime)}
+                  disabled={isLoading}
+                >
+                  {option.label}
+                </Button>
+              ))}
             </div>
           </PopoverContent>
         </Popover>
@@ -227,19 +255,6 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
           >
             <Archive className="w-3 h-3 mr-1" />
             Archive
-          </Button>
-        )}
-
-        {/* Dismiss (mark as read) */}
-        {notification.status === 'unread' && !isArchived && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs ml-auto"
-            onClick={() => handleAction('read')}
-            disabled={isLoading}
-          >
-            <X className="w-3 h-3" />
           </Button>
         )}
       </div>

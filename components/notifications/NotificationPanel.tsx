@@ -1,13 +1,24 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Bell, X, Inbox, Archive, CheckCircle } from 'lucide-react'
+import { Bell, X, Inbox, Archive, CheckCircle, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { NotificationCard } from './NotificationCard'
 import { NotificationBadge } from './NotificationBadge'
 import { cn } from '@/lib/utils'
 import type { Notification } from '@/lib/db/schema'
+
+// Helper to get/set auto-open preference
+export function getAutoOpenEnabled(): boolean {
+  if (typeof window === 'undefined') return true
+  return localStorage.getItem('notifications_auto_open') !== 'false'
+}
+
+export function setAutoOpenEnabled(enabled: boolean): void {
+  localStorage.setItem('notifications_auto_open', enabled ? 'true' : 'false')
+}
 
 type TabType = 'all' | 'unread' | 'archived'
 
@@ -21,6 +32,12 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [autoOpen, setAutoOpen] = useState(true)
+
+  // Load auto-open preference
+  useEffect(() => {
+    setAutoOpen(getAutoOpenEnabled())
+  }, [])
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -91,9 +108,35 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
             </span>
           )}
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" title="Settings">
+                <Settings className="w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-3" align="end">
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Notification Settings</p>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoOpen}
+                    onChange={(e) => {
+                      setAutoOpen(e.target.checked)
+                      setAutoOpenEnabled(e.target.checked)
+                    }}
+                    className="w-4 h-4 rounded border-border"
+                  />
+                  <span className="text-sm">Auto-open on new</span>
+                </label>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
