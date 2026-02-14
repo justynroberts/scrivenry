@@ -90,24 +90,36 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
   ]
 
   return (
-    <div
-      className={cn(
-        'fixed right-0 top-0 h-full w-80 bg-card border-l border-border shadow-lg z-50',
-        'transform transition-transform duration-300 ease-in-out',
-        isOpen ? 'translate-x-0' : 'translate-x-full'
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Bell className="w-5 h-5" />
-          <h2 className="font-semibold">Notifications</h2>
-          {unreadCount > 0 && (
-            <span className="px-2 py-0.5 text-xs bg-destructive text-destructive-foreground rounded-full">
-              {unreadCount}
-            </span>
-          )}
-        </div>
+    <>
+      {/* Backdrop */}
+      <div
+        className={cn(
+          'fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300',
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+        onClick={onClose}
+      />
+      {/* Panel */}
+      <div
+        className={cn(
+          'fixed right-0 top-0 h-full w-96 bg-gradient-to-b from-card to-card/95 border-l border-border/50 shadow-2xl z-50',
+          'transform transition-all duration-500 ease-out',
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        )}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Bell className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg">Notifications</h2>
+              {unreadCount > 0 && (
+                <span className="text-xs text-muted-foreground">{unreadCount} unread</span>
+              )}
+            </div>
+          </div>
         <div className="flex items-center gap-1">
           <Popover>
             <PopoverTrigger asChild>
@@ -139,49 +151,53 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm transition-colors',
-              activeTab === tab.id
-                ? 'text-foreground border-b-2 border-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        {/* Tabs */}
+        <div className="flex bg-muted/30">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all',
+                activeTab === tab.id
+                  ? 'text-primary bg-background shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              )}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Content */}
-      <ScrollArea className="h-[calc(100vh-120px)]">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-            <CheckCircle className="w-8 h-8 mb-2" />
-            <p className="text-sm">No notifications</p>
-          </div>
-        ) : (
-          <div>
-            {notifications.map((notification) => (
-              <NotificationCard
-                key={notification.id}
-                notification={notification}
-                onAction={handleAction}
-              />
-            ))}
-          </div>
-        )}
-      </ScrollArea>
-    </div>
+        {/* Content */}
+        <ScrollArea className="h-[calc(100vh-160px)]">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-40">
+              <div className="animate-spin w-8 h-8 border-3 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+              <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                <CheckCircle className="w-8 h-8" />
+              </div>
+              <p className="text-sm font-medium">All caught up!</p>
+              <p className="text-xs mt-1">No notifications to show</p>
+            </div>
+          ) : (
+            <div className="py-2">
+              {notifications.map((notification) => (
+                <NotificationCard
+                  key={notification.id}
+                  notification={notification}
+                  onAction={handleAction}
+                />
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+    </>
   )
 }
 
@@ -196,11 +212,18 @@ export function NotificationToggle({ onClick, unreadCount }: NotificationToggleP
     <Button
       variant="ghost"
       size="icon"
-      className="relative"
+      className={cn(
+        "relative w-10 h-10 rounded-xl transition-all duration-300",
+        "hover:bg-primary/10 hover:scale-105",
+        unreadCount > 0 && "bg-primary/5"
+      )}
       onClick={onClick}
       title="Notifications (Cmd+Shift+N)"
     >
-      <Bell className="w-5 h-5" />
+      <Bell className={cn(
+        "w-5 h-5 transition-colors",
+        unreadCount > 0 && "text-primary"
+      )} />
       <NotificationBadge count={unreadCount} />
     </Button>
   )

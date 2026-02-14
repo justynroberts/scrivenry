@@ -29,6 +29,40 @@ function getNotificationIcon(type: string) {
   }
 }
 
+function getNotificationColor(type: string) {
+  switch (type) {
+    case 'page_created':
+      return 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/30'
+    case 'page_updated':
+      return 'from-blue-500/20 to-blue-500/5 border-blue-500/30'
+    case 'system':
+      return 'from-slate-500/20 to-slate-500/5 border-slate-500/30'
+    case 'alert':
+      return 'from-red-500/20 to-red-500/5 border-red-500/30'
+    case 'feature':
+      return 'from-purple-500/20 to-purple-500/5 border-purple-500/30'
+    default:
+      return 'from-primary/20 to-primary/5 border-primary/30'
+  }
+}
+
+function getIconColor(type: string) {
+  switch (type) {
+    case 'page_created':
+      return 'text-emerald-500 bg-emerald-500/20'
+    case 'page_updated':
+      return 'text-blue-500 bg-blue-500/20'
+    case 'system':
+      return 'text-slate-400 bg-slate-500/20'
+    case 'alert':
+      return 'text-red-500 bg-red-500/20'
+    case 'feature':
+      return 'text-purple-500 bg-purple-500/20'
+    default:
+      return 'text-primary bg-primary/20'
+  }
+}
+
 function getSnoozeOptions(): { label: string; getTime: () => Date }[] {
   return [
     {
@@ -102,32 +136,40 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
 
   const isArchived = !!notification.archivedAt
   const Icon = getNotificationIcon(notification.type)
+  const colorClass = getNotificationColor(notification.type)
+  const iconColorClass = getIconColor(notification.type)
 
   return (
     <div
       className={cn(
-        'p-4 border-b border-border hover:bg-accent/50 transition-colors',
-        notification.status === 'unread' && 'bg-accent/20',
-        isArchived && 'opacity-60'
+        'mx-2 my-2 p-4 rounded-xl border transition-all duration-300',
+        'bg-gradient-to-br hover:scale-[1.02] hover:shadow-lg',
+        colorClass,
+        notification.status === 'unread' && 'ring-2 ring-primary/20 shadow-md',
+        isArchived && 'opacity-50 grayscale'
       )}
     >
       {/* Header */}
       <div className="flex items-start gap-3 mb-2">
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Icon className="w-4 h-4 text-primary" />
+        <div className={cn(
+          'flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center',
+          'transition-transform duration-300 hover:scale-110',
+          iconColorClass
+        )}>
+          <Icon className="w-5 h-5" />
         </div>
         <div
-          className={cn('flex-1 cursor-pointer', notification.linkUrl && 'hover:underline')}
+          className={cn('flex-1 cursor-pointer group', notification.linkUrl && 'hover:underline')}
           onClick={handleClick}
         >
-          <h4 className="font-medium text-sm">{notification.title}</h4>
-          <p className="text-xs text-muted-foreground">{formatTimeAgo(notification.createdAt)}</p>
+          <h4 className="font-semibold text-sm group-hover:text-primary transition-colors">{notification.title}</h4>
+          <p className="text-xs text-muted-foreground mt-0.5">{formatTimeAgo(notification.createdAt)}</p>
         </div>
         <div className="flex items-center gap-1">
           {notification.status === 'snoozed' && notification.snoozedUntil && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="text-xs text-amber-500 flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-full">
               <Clock className="w-3 h-3" />
-              {new Date(notification.snoozedUntil).toLocaleString()}
+              {new Date(notification.snoozedUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
         </div>
@@ -189,28 +231,28 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 mt-2">
+      <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-border/50">
         {/* Snooze */}
         <Popover open={snoozeOpen} onOpenChange={setSnoozeOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs"
+              className="h-8 text-xs rounded-lg hover:bg-amber-500/20 hover:text-amber-500 transition-colors"
               disabled={isLoading || isArchived}
             >
-              <Clock className="w-3 h-3 mr-1" />
+              <Clock className="w-3.5 h-3.5 mr-1.5" />
               Snooze
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-40 p-2">
-            <div className="space-y-1">
+          <PopoverContent className="w-36 p-1.5" align="start">
+            <div className="space-y-0.5">
               {getSnoozeOptions().map((option) => (
                 <Button
                   key={option.label}
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start h-8 text-xs"
+                  className="w-full justify-start h-8 text-xs rounded-lg hover:bg-amber-500/20 hover:text-amber-500"
                   onClick={() => handleSnooze(option.getTime)}
                   disabled={isLoading}
                 >
@@ -225,12 +267,17 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 text-xs"
+          className={cn(
+            "h-8 text-xs rounded-lg transition-colors",
+            notification.status === 'accepted'
+              ? "bg-emerald-500/20 text-emerald-500"
+              : "hover:bg-emerald-500/20 hover:text-emerald-500"
+          )}
           onClick={() => handleAction('accept')}
           disabled={isLoading || isArchived || notification.status === 'accepted'}
         >
-          <Check className="w-3 h-3 mr-1" />
-          Accept
+          <Check className="w-3.5 h-3.5 mr-1.5" />
+          {notification.status === 'accepted' ? 'Accepted' : 'Accept'}
         </Button>
 
         {/* Archive / Unarchive */}
@@ -238,22 +285,22 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs"
+            className="h-8 text-xs rounded-lg hover:bg-blue-500/20 hover:text-blue-500 transition-colors ml-auto"
             onClick={() => handleAction('unarchive')}
             disabled={isLoading}
           >
-            <Archive className="w-3 h-3 mr-1" />
-            Unarchive
+            <Archive className="w-3.5 h-3.5 mr-1.5" />
+            Restore
           </Button>
         ) : (
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 text-xs"
+            className="h-8 text-xs rounded-lg hover:bg-slate-500/20 hover:text-slate-400 transition-colors ml-auto"
             onClick={() => handleAction('archive')}
             disabled={isLoading}
           >
-            <Archive className="w-3 h-3 mr-1" />
+            <Archive className="w-3.5 h-3.5 mr-1.5" />
             Archive
           </Button>
         )}
