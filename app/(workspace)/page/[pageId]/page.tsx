@@ -12,16 +12,17 @@ interface PageProps {
 }
 
 export default async function Page({ params }: PageProps) {
-  const { pageId } = await params
-  const { user } = await validateRequest()
+  try {
+    const { pageId } = await params
+    const { user } = await validateRequest()
 
-  const page = await db.query.pages.findFirst({
-    where: eq(pages.id, pageId),
-  })
+    const page = await db.query.pages.findFirst({
+      where: eq(pages.id, pageId),
+    })
 
-  if (!page || page.deletedAt) {
-    notFound()
-  }
+    if (!page || page.deletedAt) {
+      notFound()
+    }
 
   // Check if favorited
   let isFavorite = false
@@ -85,4 +86,8 @@ export default async function Page({ params }: PageProps) {
       initialTags={serializedTags as any}
     />
   )
+  } catch (error) {
+    console.error('Page render error:', error)
+    throw error
+  }
 }

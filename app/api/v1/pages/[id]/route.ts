@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { pages, apiKeys } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { createHash } from 'crypto'
+import { pageEvents } from '@/lib/events'
 
 interface RouteParams {
   params: Promise<{
@@ -134,6 +135,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .set(updates)
       .where(eq(pages.id, id))
       .returning()
+
+    // Emit event for real-time updates
+    pageEvents.emit(id, updatedPage.updatedAt.toISOString())
 
     return NextResponse.json({
       page: {

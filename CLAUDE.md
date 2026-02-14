@@ -133,6 +133,34 @@ Environment variables (optional):
 - `DATABASE_URL` - SQLite path (default: `file:./data/scrivenry.db`)
 - `NODE_ENV` - `development` or `production`
 
+## Troubleshooting
+
+### 500 Error: "Bad escaped character in JSON"
+**Symptom:** All page loads return 500 error with `SyntaxError: Bad escaped character in JSON` in logs.
+
+**Cause:** Invalid JSON escape sequences in page `content` field. JSON only supports `\n \r \t \b \f \\ \" \/ \uXXXX` - shell escapes like `\!` or `\x27` are invalid.
+
+**Fix:**
+```bash
+# Find problematic pages
+sqlite3 data/scrivenry.db "SELECT id, title FROM pages;" | while IFS='|' read -r id title; do
+  sqlite3 data/scrivenry.db "SELECT content FROM pages WHERE id = '$id';" 2>/dev/null | \
+    python3 -c "import json,sys; json.loads(sys.stdin.read().strip())" 2>/dev/null || \
+    echo "Invalid JSON: $id - $title"
+done
+
+# Fix invalid escapes (removes backslash before invalid chars)
+sqlite3 data/scrivenry.db "SELECT content FROM pages WHERE id = 'PAGE_ID';" > /tmp/fix.json
+python3 -c "
+import re
+with open('/tmp/fix.json') as f: c = f.read().strip()
+fixed = re.sub(r'\\\\(?![\"\\\\\/bfnrtu])', '', c)
+fixed = re.sub(r'\\\\x([0-9a-fA-F]{2})', lambda m: chr(int(m.group(1), 16)), fixed)
+with open('/tmp/fix.json', 'w') as f: f.write(fixed)
+"
+sqlite3 data/scrivenry.db "UPDATE pages SET content = readfile('/tmp/fix.json') WHERE id = 'PAGE_ID';"
+```
+
 ## Notes
 
 - Default port is 3847 (non-standard to avoid conflicts)

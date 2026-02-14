@@ -48,15 +48,68 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
   const [zenMode, setZenMode] = useState(false)
   const [pageTags, setPageTags] = useState<Tag[]>(initialTags)
   const saveTimeoutRef = useRef<NodeJS.Timeout>()
+  const lastLocalEditRef = useRef<number>(0)
+  const lastKnownUpdatedAt = useRef<string>(String(initialPage.updatedAt))
+
+  // Subscribe to real-time updates via SSE (Server-Sent Events)
+  useEffect(() => {
+    const eventSource = new EventSource(`/api/pages/${page.id}/subscribe`)
+
+    eventSource.onmessage = async (event) => {
+      try {
+        const data = JSON.parse(event.data)
+
+        if (data.type === 'update') {
+          // Skip if user edited recently (within last 2 seconds)
+          if (Date.now() - lastLocalEditRef.current < 2000) return
+
+          // Only fetch if the update is newer than what we have
+          if (data.updatedAt !== lastKnownUpdatedAt.current) {
+            const res = await fetch(`/api/pages/${page.id}`)
+            if (!res.ok) return
+
+            const { page: serverPage } = await res.json()
+            lastKnownUpdatedAt.current = data.updatedAt
+
+            setPage(prev => ({
+              ...serverPage,
+              createdAt: serverPage.createdAt,
+              updatedAt: serverPage.updatedAt,
+              deletedAt: serverPage.deletedAt,
+            }))
+
+            // Update sidebar too
+            updateSidebarPage(serverPage.id, {
+              title: serverPage.title,
+              icon: serverPage.icon,
+            })
+          }
+        }
+      } catch {
+        // Silently ignore parse errors
+      }
+    }
+
+    eventSource.onerror = () => {
+      // SSE will auto-reconnect
+    }
+
+    return () => eventSource.close()
+  }, [page.id, updateSidebarPage])
 
   const saveContent = useCallback(async (content: Record<string, unknown>) => {
     setSaving(true)
+    lastLocalEditRef.current = Date.now()
     try {
-      await fetch(`/api/pages/${page.id}`, {
+      const res = await fetch(`/api/pages/${page.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
       })
+      if (res.ok) {
+        const { page: updatedPage } = await res.json()
+        lastKnownUpdatedAt.current = updatedPage.updatedAt
+      }
     } catch (error) {
       console.error('Failed to save:', error)
     } finally {
@@ -65,6 +118,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
   }, [page.id])
 
   const handleContentChange = useCallback((content: Record<string, unknown>) => {
+    lastLocalEditRef.current = Date.now()
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current)
     }
@@ -78,12 +132,17 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
     if (newTitle !== page.title) {
       setPage(prev => ({ ...prev, title: newTitle }))
       updateSidebarPage(page.id, { title: newTitle })
+      lastLocalEditRef.current = Date.now()
       try {
-        await fetch(`/api/pages/${page.id}`, {
+        const res = await fetch(`/api/pages/${page.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: newTitle }),
         })
+        if (res.ok) {
+          const { page: updatedPage } = await res.json()
+          lastKnownUpdatedAt.current = updatedPage.updatedAt
+        }
       } catch (error) {
         console.error('Failed to save title:', error)
       }
@@ -93,12 +152,17 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
   const handleIconChange = useCallback(async (emoji: string) => {
     setPage(prev => ({ ...prev, icon: emoji || null }))
     updateSidebarPage(page.id, { icon: emoji || null })
+    lastLocalEditRef.current = Date.now()
     try {
-      await fetch(`/api/pages/${page.id}`, {
+      const res = await fetch(`/api/pages/${page.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ icon: emoji || null }),
       })
+      if (res.ok) {
+        const { page: updatedPage } = await res.json()
+        lastKnownUpdatedAt.current = updatedPage.updatedAt
+      }
     } catch (error) {
       console.error('Failed to save icon:', error)
     }
@@ -106,12 +170,17 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
 
   const handleCoverChange = useCallback(async (cover: string | null) => {
     setPage(prev => ({ ...prev, cover }))
+    lastLocalEditRef.current = Date.now()
     try {
-      await fetch(`/api/pages/${page.id}`, {
+      const res = await fetch(`/api/pages/${page.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cover }),
       })
+      if (res.ok) {
+        const { page: updatedPage } = await res.json()
+        lastKnownUpdatedAt.current = updatedPage.updatedAt
+      }
     } catch (error) {
       console.error('Failed to save cover:', error)
     }

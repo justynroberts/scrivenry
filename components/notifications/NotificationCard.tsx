@@ -109,6 +109,7 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [snoozeOpen, setSnoozeOpen] = useState(false)
+  const [isFadingOut, setIsFadingOut] = useState(false)
 
   const handleAction = async (action: string, data?: Record<string, unknown>) => {
     setIsLoading(true)
@@ -117,6 +118,14 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleFadeAction = async (action: string) => {
+    setIsFadingOut(true)
+    // Wait for fade animation (3s), then perform action
+    setTimeout(async () => {
+      await handleAction(action)
+    }, 3000)
   }
 
   const handleSnooze = async (getTime: () => Date) => {
@@ -142,12 +151,16 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
   return (
     <div
       className={cn(
-        'mx-2 my-2 p-4 rounded-xl border transition-all duration-300',
-        'bg-gradient-to-br hover:scale-[1.02] hover:shadow-lg',
+        'mx-2 my-2 p-4 rounded-xl border bg-gradient-to-br',
+        'hover:scale-[1.02] hover:shadow-lg',
         colorClass,
         notification.status === 'unread' && 'ring-2 ring-primary/20 shadow-md',
-        isArchived && 'opacity-50 grayscale'
+        isArchived && 'opacity-50 grayscale',
+        isFadingOut
+          ? 'transition-all duration-[3000ms] ease-out opacity-0 scale-95 translate-x-4'
+          : 'transition-all duration-300'
       )}
+      style={isFadingOut ? { pointerEvents: 'none' } : undefined}
     >
       {/* Header */}
       <div className="flex items-start gap-3 mb-2">
@@ -273,8 +286,8 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
               ? "bg-emerald-500/20 text-emerald-500"
               : "hover:bg-emerald-500/20 hover:text-emerald-500"
           )}
-          onClick={() => handleAction('accept')}
-          disabled={isLoading || isArchived || notification.status === 'accepted'}
+          onClick={() => handleFadeAction('accept')}
+          disabled={isLoading || isArchived || notification.status === 'accepted' || isFadingOut}
         >
           <Check className="w-3.5 h-3.5 mr-1.5" />
           {notification.status === 'accepted' ? 'Accepted' : 'Accept'}
@@ -287,7 +300,7 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
             size="sm"
             className="h-8 text-xs rounded-lg hover:bg-blue-500/20 hover:text-blue-500 transition-colors ml-auto"
             onClick={() => handleAction('unarchive')}
-            disabled={isLoading}
+            disabled={isLoading || isFadingOut}
           >
             <Archive className="w-3.5 h-3.5 mr-1.5" />
             Restore
@@ -297,8 +310,8 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
             variant="ghost"
             size="sm"
             className="h-8 text-xs rounded-lg hover:bg-slate-500/20 hover:text-slate-400 transition-colors ml-auto"
-            onClick={() => handleAction('archive')}
-            disabled={isLoading}
+            onClick={() => handleFadeAction('archive')}
+            disabled={isLoading || isFadingOut}
           >
             <Archive className="w-3.5 h-3.5 mr-1.5" />
             Archive
