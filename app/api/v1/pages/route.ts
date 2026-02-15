@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { workspace_id, parent_id, title, icon, properties } = body
+    const { workspace_id, parent_id, title, icon, properties, content } = body
 
     if (!workspace_id) {
       return NextResponse.json(
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
       depth,
       position,
       properties: properties || {},
-      content: {
+      content: content || {
         type: 'doc',
         content: [{ type: 'paragraph' }],
       },

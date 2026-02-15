@@ -128,6 +128,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.title !== undefined) updates.title = body.title
     if (body.icon !== undefined) updates.icon = body.icon
     if (body.cover !== undefined) updates.cover = body.cover
+    if (body.content !== undefined) updates.content = body.content
     if (body.properties !== undefined) updates.properties = body.properties
 
     const [updatedPage] = await db

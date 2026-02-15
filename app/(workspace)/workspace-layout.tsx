@@ -22,7 +22,7 @@ function WorkspaceContent({
   workspaceId,
 }: Omit<WorkspaceLayoutProps, 'pages'>) {
   const router = useRouter()
-  const { pages, addPage, removePage } = usePages()
+  const { pages, addPage, removePage, setPages } = usePages()
   const [searchOpen, setSearchOpen] = useState(false)
   const [favorites, setFavorites] = useState<Page[]>([])
   const [showTour, setShowTour] = useState(false)
@@ -118,6 +118,51 @@ function WorkspaceContent({
     }
   }, [router, addPage])
 
+  const handleReorderPages = useCallback(async (pageIds: string[]) => {
+    // Optimistically update local state
+    const reorderedPages = pages.map(p => {
+      const newPosition = pageIds.indexOf(p.id)
+      if (newPosition !== -1) {
+        return { ...p, position: newPosition }
+      }
+      return p
+    })
+    setPages(reorderedPages)
+
+    // Persist to backend
+    try {
+      await fetch('/api/pages/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pageIds }),
+      })
+    } catch (error) {
+      console.error('Failed to reorder pages:', error)
+    }
+  }, [pages, setPages])
+
+  const handleMovePage = useCallback(async (pageId: string, newParentId: string | null) => {
+    // Optimistically update local state
+    const movedPages = pages.map(p => {
+      if (p.id === pageId) {
+        return { ...p, parentId: newParentId }
+      }
+      return p
+    })
+    setPages(movedPages)
+
+    // Persist to backend
+    try {
+      await fetch('/api/pages/move', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pageId, newParentId }),
+      })
+    } catch (error) {
+      console.error('Failed to move page:', error)
+    }
+  }, [pages, setPages])
+
   // Fetch unread notifications count and auto-open panel on new notifications
   useEffect(() => {
     async function fetchUnreadCount() {
@@ -173,6 +218,8 @@ function WorkspaceContent({
         onCreatePage={handleCreatePage}
         onDeletePage={handleDeletePage}
         onDuplicatePage={handleDuplicatePage}
+        onReorderPages={handleReorderPages}
+        onMovePage={handleMovePage}
         onSearch={() => setSearchOpen(true)}
       />
       <main className="flex-1 overflow-auto">

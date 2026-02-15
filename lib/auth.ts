@@ -11,7 +11,8 @@ export const lucia = new Lucia(adapter, {
   sessionCookie: {
     expires: false,
     attributes: {
-      secure: process.env.NODE_ENV === 'production',
+      // Secure cookies only work over HTTPS; disable for HTTP deployments
+      secure: process.env.AUTH_SECURE_COOKIES === 'true',
     },
   },
   getUserAttributes: (attributes) => {

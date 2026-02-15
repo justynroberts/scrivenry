@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useCallback, useState, type ReactNode } from 'react'
+import { createContext, useContext, useCallback, useState, useEffect, useRef, type ReactNode } from 'react'
 import type { Page } from '@/lib/db/schema'
 
 interface PageContextType {
@@ -20,6 +20,49 @@ interface PageProviderProps {
 
 export function PageProvider({ children, initialPages }: PageProviderProps) {
   const [pages, setPagesState] = useState<Page[]>(initialPages)
+  const lastFetchRef = useRef<string>('')
+
+  // Poll for new/updated pages when tab is visible
+  useEffect(() => {
+    let pollTimeout: NodeJS.Timeout | null = null
+
+    const checkForUpdates = async () => {
+      // Skip if tab not visible
+      if (document.hidden) {
+        pollTimeout = setTimeout(checkForUpdates, 2000)
+        return
+      }
+
+      try {
+        const res = await fetch('/api/pages')
+        if (!res.ok) return
+
+        const { pages: serverPages } = await res.json()
+
+        // Create a hash of page IDs and updatedAt to detect changes
+        const serverHash = serverPages
+          .map((p: Page) => `${p.id}:${p.updatedAt}`)
+          .sort()
+          .join(',')
+
+        if (serverHash !== lastFetchRef.current) {
+          lastFetchRef.current = serverHash
+          setPagesState(serverPages)
+        }
+      } catch {
+        // Silently ignore errors
+      } finally {
+        pollTimeout = setTimeout(checkForUpdates, 2000)
+      }
+    }
+
+    // Start polling after initial render
+    pollTimeout = setTimeout(checkForUpdates, 2000)
+
+    return () => {
+      if (pollTimeout) clearTimeout(pollTimeout)
+    }
+  }, [])
 
   const updatePage = useCallback((pageId: string, updates: Partial<Page>) => {
     setPagesState(prev =>

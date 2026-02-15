@@ -51,50 +51,51 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
   const lastLocalEditRef = useRef<number>(0)
   const lastKnownUpdatedAt = useRef<string>(String(initialPage.updatedAt))
 
-  // Subscribe to real-time updates via SSE (Server-Sent Events)
+  // Smart polling for external updates - only when tab is visible
   useEffect(() => {
-    const eventSource = new EventSource(`/api/pages/${page.id}/subscribe`)
+    let pollTimeout: NodeJS.Timeout | null = null
 
-    eventSource.onmessage = async (event) => {
+    const checkForUpdates = async () => {
+      // Skip if tab not visible or user edited recently
+      if (document.hidden || Date.now() - lastLocalEditRef.current < 2000) {
+        pollTimeout = setTimeout(checkForUpdates, 2000)
+        return
+      }
+
       try {
-        const data = JSON.parse(event.data)
+        const res = await fetch(`/api/pages/${page.id}`)
+        if (!res.ok) return
 
-        if (data.type === 'update') {
-          // Skip if user edited recently (within last 2 seconds)
-          if (Date.now() - lastLocalEditRef.current < 2000) return
+        const { page: serverPage } = await res.json()
 
-          // Only fetch if the update is newer than what we have
-          if (data.updatedAt !== lastKnownUpdatedAt.current) {
-            const res = await fetch(`/api/pages/${page.id}`)
-            if (!res.ok) return
-
-            const { page: serverPage } = await res.json()
-            lastKnownUpdatedAt.current = data.updatedAt
-
-            setPage(prev => ({
-              ...serverPage,
-              createdAt: serverPage.createdAt,
-              updatedAt: serverPage.updatedAt,
-              deletedAt: serverPage.deletedAt,
-            }))
-
-            // Update sidebar too
-            updateSidebarPage(serverPage.id, {
-              title: serverPage.title,
-              icon: serverPage.icon,
-            })
-          }
+        // Check if server has newer version
+        if (serverPage.updatedAt !== lastKnownUpdatedAt.current) {
+          lastKnownUpdatedAt.current = serverPage.updatedAt
+          setPage(prev => ({
+            ...serverPage,
+            createdAt: serverPage.createdAt,
+            updatedAt: serverPage.updatedAt,
+            deletedAt: serverPage.deletedAt,
+          }))
+          // Update sidebar too
+          updateSidebarPage(serverPage.id, {
+            title: serverPage.title,
+            icon: serverPage.icon,
+          })
         }
       } catch {
-        // Silently ignore parse errors
+        // Silently ignore errors
+      } finally {
+        pollTimeout = setTimeout(checkForUpdates, 2000)
       }
     }
 
-    eventSource.onerror = () => {
-      // SSE will auto-reconnect
-    }
+    // Start polling
+    pollTimeout = setTimeout(checkForUpdates, 2000)
 
-    return () => eventSource.close()
+    return () => {
+      if (pollTimeout) clearTimeout(pollTimeout)
+    }
   }, [page.id, updateSidebarPage])
 
   const saveContent = useCallback(async (content: Record<string, unknown>) => {
