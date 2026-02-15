@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// MIT License - Copyright (c) fintonlabs.com
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -61,6 +62,35 @@ interface SearchResponse {
   took_ms: number;
 }
 
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string | null;
+  image_url: string | null;
+  video_url: string | null;
+  link_url: string | null;
+  link_text: string | null;
+  metadata: Record<string, unknown>;
+  page_id: string | null;
+  status: string;
+  snoozed_until: string | null;
+  created_at: string;
+  read_at: string | null;
+  archived_at: string | null;
+}
+
+interface ListNotificationsResponse {
+  notifications: Notification[];
+  unread_count: number;
+  has_more: boolean;
+  next_cursor: string | null;
+}
+
+interface NotificationResponse {
+  notification: Notification;
+}
+
 async function apiRequest<T>(
   endpoint: string,
   method: string = "GET",
@@ -98,6 +128,7 @@ async function apiRequest<T>(
 
 // Define tools
 const tools: Tool[] = [
+  // Page tools
   {
     name: "scrivenry_list_pages",
     description:
@@ -111,7 +142,7 @@ const tools: Tool[] = [
         },
         parent_id: {
           type: "string",
-          description: "Optional parent page ID to list child pages",
+          description: "Optional parent page ID to list child pages. Use 'null' for root pages only.",
         },
         limit: {
           type: "number",
@@ -158,6 +189,10 @@ const tools: Tool[] = [
           type: "string",
           description: "Workspace ID (uses default if not specified)",
         },
+        content: {
+          type: "object",
+          description: "Optional TipTap JSON content for the page",
+        },
       },
       required: ["title"],
     },
@@ -181,6 +216,10 @@ const tools: Tool[] = [
           type: "string",
           description: "New emoji icon for the page",
         },
+        cover: {
+          type: "string",
+          description: "New cover image URL for the page",
+        },
         content: {
           type: "string",
           description: "New content for the page (plain text - will be converted to TipTap format)",
@@ -200,9 +239,13 @@ const tools: Tool[] = [
           type: "string",
           description: "Search query string",
         },
+        workspace_id: {
+          type: "string",
+          description: "Optional workspace ID to filter search results",
+        },
         limit: {
           type: "number",
-          description: "Maximum number of results (default: 20)",
+          description: "Maximum number of results (default: 20, max: 100)",
         },
       },
       required: ["query"],
@@ -225,6 +268,146 @@ const tools: Tool[] = [
         },
       },
       required: ["page_id"],
+    },
+  },
+  {
+    name: "scrivenry_move_page",
+    description:
+      "Move a page to a new parent (organize into folders). Set parent_id to null to move to root.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        page_id: {
+          type: "string",
+          description: "The ID of the page to move",
+        },
+        parent_id: {
+          type: "string",
+          description: "The ID of the new parent page (folder), or null for root level",
+        },
+      },
+      required: ["page_id"],
+    },
+  },
+  // Notification tools
+  {
+    name: "scrivenry_list_notifications",
+    description:
+      "List notifications for the current user. Can filter by status (unread, read, snoozed, accepted, archived, active, all).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        status: {
+          type: "string",
+          description: "Filter by status: 'unread', 'read', 'snoozed', 'accepted', 'archived', 'active' (non-archived), or 'all'",
+          enum: ["unread", "read", "snoozed", "accepted", "archived", "active", "all"],
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of notifications to return (default: 50)",
+        },
+      },
+    },
+  },
+  {
+    name: "scrivenry_get_notification",
+    description:
+      "Get a specific notification by ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        notification_id: {
+          type: "string",
+          description: "The ID of the notification to retrieve",
+        },
+      },
+      required: ["notification_id"],
+    },
+  },
+  {
+    name: "scrivenry_create_notification",
+    description:
+      "Create a new notification with optional rich content (images, videos, links).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string",
+          description: "Notification title (required)",
+        },
+        message: {
+          type: "string",
+          description: "Notification message/body",
+        },
+        type: {
+          type: "string",
+          description: "Notification type (default: 'custom')",
+        },
+        image_url: {
+          type: "string",
+          description: "URL of an image to display",
+        },
+        video_url: {
+          type: "string",
+          description: "URL of a video to embed",
+        },
+        link_url: {
+          type: "string",
+          description: "URL for the notification link",
+        },
+        link_text: {
+          type: "string",
+          description: "Text for the notification link",
+        },
+        page_id: {
+          type: "string",
+          description: "Related page ID for navigation",
+        },
+        metadata: {
+          type: "object",
+          description: "Custom metadata object",
+        },
+      },
+      required: ["title"],
+    },
+  },
+  {
+    name: "scrivenry_update_notification",
+    description:
+      "Update a notification's status. Actions: read, unread, snooze, accept, archive, unarchive.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        notification_id: {
+          type: "string",
+          description: "The ID of the notification to update",
+        },
+        action: {
+          type: "string",
+          description: "Action to perform: 'read', 'unread', 'snooze', 'accept', 'archive', 'unarchive'",
+          enum: ["read", "unread", "snooze", "accept", "archive", "unarchive"],
+        },
+        snoozed_until: {
+          type: "string",
+          description: "ISO 8601 timestamp for snooze end time (required for 'snooze' action)",
+        },
+      },
+      required: ["notification_id", "action"],
+    },
+  },
+  {
+    name: "scrivenry_delete_notification",
+    description:
+      "Permanently delete a notification.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        notification_id: {
+          type: "string",
+          description: "The ID of the notification to delete",
+        },
+      },
+      required: ["notification_id"],
     },
   },
 ];
@@ -264,11 +447,23 @@ function tipTapToText(content: Record<string, unknown>): string {
   return "";
 }
 
+// Format notification for display
+function formatNotification(n: Notification): string {
+  let output = `**${n.title}**`;
+  if (n.message) output += `\n${n.message}`;
+  output += `\n\nStatus: ${n.status}`;
+  output += `\nCreated: ${n.created_at}`;
+  if (n.snoozed_until) output += `\nSnoozed until: ${n.snoozed_until}`;
+  if (n.link_url) output += `\nLink: ${n.link_text || n.link_url}`;
+  if (n.page_id) output += `\nRelated page: ${n.page_id}`;
+  return output;
+}
+
 // Create server
 const server = new Server(
   {
     name: "scrivenry-mcp-server",
-    version: "1.0.0",
+    version: "1.2.0",
   },
   {
     capabilities: {
@@ -288,6 +483,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
+      // Page tools
       case "scrivenry_list_pages": {
         const params = new URLSearchParams();
         if (args?.workspace_id) params.set("workspace_id", String(args.workspace_id));
@@ -306,7 +502,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `Found ${result.pages.length} pages:\n\n${pageList}`,
+              text: `Found ${result.pages.length} pages:\n\n${pageList}${result.has_more ? "\n\n(More pages available)" : ""}`,
             },
           ],
         };
@@ -356,6 +552,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
         if (args.icon) body.icon = args.icon;
         if (args.parent_id) body.parent_id = args.parent_id;
+        if (args.content) body.content = args.content;
 
         const result = await apiRequest<PageResponse>("/pages", "POST", body);
 
@@ -377,12 +574,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const body: Record<string, unknown> = {};
         if (args.title) body.title = args.title;
         if (args.icon) body.icon = args.icon;
+        if (args.cover) body.cover = args.cover;
         if (args.content) {
           body.content = textToTipTap(String(args.content));
         }
 
         if (Object.keys(body).length === 0) {
-          throw new Error("At least one of title, icon, or content must be provided");
+          throw new Error("At least one of title, icon, cover, or content must be provided");
         }
 
         const result = await apiRequest<PageResponse>(
@@ -407,6 +605,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         const params = new URLSearchParams({ q: String(args.query) });
+        if (args.workspace_id) params.set("workspace_id", String(args.workspace_id));
         if (args.limit) params.set("limit", String(args.limit));
 
         const result = await apiRequest<SearchResponse>(`/search?${params}`);
@@ -425,7 +624,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `Found ${result.total} results:\n\n${resultList}`,
+              text: `Found ${result.total} results (${result.took_ms}ms):\n\n${resultList}`,
             },
           ],
         };
@@ -452,6 +651,160 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case "scrivenry_move_page": {
+        if (!args?.page_id) {
+          throw new Error("page_id is required");
+        }
+
+        const body: Record<string, unknown> = {
+          parent_id: args.parent_id || null,
+        };
+
+        const result = await apiRequest<PageResponse>(
+          `/pages/${args.page_id}`,
+          "PATCH",
+          body
+        );
+
+        const destination = result.page.parent_id ? `under parent ${result.page.parent_id}` : "to root level";
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Moved page "${result.page.title}" ${destination}`,
+            },
+          ],
+        };
+      }
+
+      // Notification tools
+      case "scrivenry_list_notifications": {
+        const params = new URLSearchParams();
+        if (args?.status) params.set("status", String(args.status));
+        if (args?.limit) params.set("limit", String(args.limit));
+
+        const queryString = params.toString();
+        const endpoint = `/notifications${queryString ? `?${queryString}` : ""}`;
+        const result = await apiRequest<ListNotificationsResponse>(endpoint);
+
+        if (result.notifications.length === 0) {
+          return {
+            content: [{ type: "text", text: `No notifications found. Unread count: ${result.unread_count}` }],
+          };
+        }
+
+        const notifList = result.notifications.map(n =>
+          `- [${n.status.toUpperCase()}] ${n.title} (ID: ${n.id})\n  ${n.message || "(no message)"}\n  Created: ${n.created_at}`
+        ).join("\n\n");
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Found ${result.notifications.length} notifications (${result.unread_count} unread):\n\n${notifList}${result.has_more ? "\n\n(More notifications available)" : ""}`,
+            },
+          ],
+        };
+      }
+
+      case "scrivenry_get_notification": {
+        if (!args?.notification_id) {
+          throw new Error("notification_id is required");
+        }
+
+        const result = await apiRequest<NotificationResponse>(
+          `/notifications/${args.notification_id}`
+        );
+
+        const n = result.notification;
+        return {
+          content: [
+            {
+              type: "text",
+              text: `# Notification: ${n.title}\n\n**ID:** ${n.id}\n**Type:** ${n.type}\n**Status:** ${n.status}\n**Created:** ${n.created_at}\n\n---\n\n${formatNotification(n)}`,
+            },
+          ],
+        };
+      }
+
+      case "scrivenry_create_notification": {
+        if (!args?.title) {
+          throw new Error("title is required");
+        }
+
+        const body: Record<string, unknown> = {
+          title: args.title,
+        };
+        if (args.message) body.message = args.message;
+        if (args.type) body.type = args.type;
+        if (args.image_url) body.image_url = args.image_url;
+        if (args.video_url) body.video_url = args.video_url;
+        if (args.link_url) body.link_url = args.link_url;
+        if (args.link_text) body.link_text = args.link_text;
+        if (args.page_id) body.page_id = args.page_id;
+        if (args.metadata) body.metadata = args.metadata;
+
+        const result = await apiRequest<NotificationResponse>("/notifications", "POST", body);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Created notification "${result.notification.title}" with ID: ${result.notification.id}`,
+            },
+          ],
+        };
+      }
+
+      case "scrivenry_update_notification": {
+        if (!args?.notification_id) {
+          throw new Error("notification_id is required");
+        }
+        if (!args?.action) {
+          throw new Error("action is required");
+        }
+
+        const body: Record<string, unknown> = {
+          action: args.action,
+        };
+        if (args.snoozed_until) body.snoozed_until = args.snoozed_until;
+
+        const result = await apiRequest<NotificationResponse>(
+          `/notifications/${args.notification_id}`,
+          "PATCH",
+          body
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Updated notification "${result.notification.title}" - Status: ${result.notification.status}`,
+            },
+          ],
+        };
+      }
+
+      case "scrivenry_delete_notification": {
+        if (!args?.notification_id) {
+          throw new Error("notification_id is required");
+        }
+
+        await apiRequest<{ success: boolean }>(
+          `/notifications/${args.notification_id}`,
+          "DELETE"
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Notification ${args.notification_id} has been permanently deleted.`,
+            },
+          ],
+        };
+      }
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -468,7 +821,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Scrivenry MCP server running on stdio");
+  console.error("Scrivenry MCP server v1.1.0 running on stdio");
 }
 
 main().catch((error) => {

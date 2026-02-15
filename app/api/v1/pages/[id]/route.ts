@@ -131,6 +131,49 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.content !== undefined) updates.content = body.content
     if (body.properties !== undefined) updates.properties = body.properties
 
+    // Handle parent_id changes (moving pages)
+    if (body.parent_id !== undefined) {
+      const newParentId = body.parent_id
+
+      // Prevent moving to self
+      if (newParentId === id) {
+        return NextResponse.json(
+          { error: 'Bad request', message: 'Cannot move page to itself' },
+          { status: 400 }
+        )
+      }
+
+      if (newParentId) {
+        const parent = await db.query.pages.findFirst({
+          where: eq(pages.id, newParentId),
+        })
+
+        if (!parent) {
+          return NextResponse.json(
+            { error: 'Bad request', message: 'Parent page not found' },
+            { status: 400 }
+          )
+        }
+
+        // Prevent circular reference
+        if (parent.path?.includes(id)) {
+          return NextResponse.json(
+            { error: 'Bad request', message: 'Cannot move page to its own descendant' },
+            { status: 400 }
+          )
+        }
+
+        updates.parentId = newParentId
+        updates.path = [...(parent.path || []), parent.id]
+        updates.depth = (parent.depth || 0) + 1
+      } else {
+        // Moving to root
+        updates.parentId = null
+        updates.path = []
+        updates.depth = 0
+      }
+    }
+
     const [updatedPage] = await db
       .update(pages)
       .set(updates)
