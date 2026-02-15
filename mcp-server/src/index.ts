@@ -412,19 +412,173 @@ const tools: Tool[] = [
   },
 ];
 
-// Convert plain text to TipTap document format
-function textToTipTap(text: string): Record<string, unknown> {
-  const paragraphs = text.split("\n\n").filter(p => p.trim());
+// Convert markdown to TipTap document format
+function markdownToTipTap(markdown: string): Record<string, unknown> {
+  const lines = markdown.split('\n');
+  const content: Record<string, unknown>[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Skip empty lines
+    if (!line.trim()) {
+      i++;
+      continue;
+    }
+
+    // Code block
+    if (line.startsWith('```')) {
+      const lang = line.slice(3).trim();
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // skip closing ```
+      content.push({
+        type: 'codeBlock',
+        attrs: { language: lang || null },
+        content: [{ type: 'text', text: codeLines.join('\n') }]
+      });
+      continue;
+    }
+
+    // Heading
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      content.push({
+        type: 'heading',
+        attrs: { level },
+        content: parseInlineMarks(headingMatch[2])
+      });
+      i++;
+      continue;
+    }
+
+    // Blockquote
+    if (line.startsWith('> ')) {
+      const quoteLines: string[] = [];
+      while (i < lines.length && lines[i].startsWith('> ')) {
+        quoteLines.push(lines[i].slice(2));
+        i++;
+      }
+      content.push({
+        type: 'blockquote',
+        content: [{
+          type: 'paragraph',
+          content: parseInlineMarks(quoteLines.join(' '))
+        }]
+      });
+      continue;
+    }
+
+    // Unordered list
+    if (line.match(/^[-*]\s+/)) {
+      const items: Record<string, unknown>[] = [];
+      while (i < lines.length && lines[i].match(/^[-*]\s+/)) {
+        const itemText = lines[i].replace(/^[-*]\s+/, '');
+        items.push({
+          type: 'listItem',
+          content: [{
+            type: 'paragraph',
+            content: parseInlineMarks(itemText)
+          }]
+        });
+        i++;
+      }
+      content.push({ type: 'bulletList', content: items });
+      continue;
+    }
+
+    // Ordered list
+    if (line.match(/^\d+\.\s+/)) {
+      const items: Record<string, unknown>[] = [];
+      while (i < lines.length && lines[i].match(/^\d+\.\s+/)) {
+        const itemText = lines[i].replace(/^\d+\.\s+/, '');
+        items.push({
+          type: 'listItem',
+          content: [{
+            type: 'paragraph',
+            content: parseInlineMarks(itemText)
+          }]
+        });
+        i++;
+      }
+      content.push({ type: 'orderedList', content: items });
+      continue;
+    }
+
+    // Horizontal rule
+    if (line.match(/^(-{3,}|_{3,}|\*{3,})$/)) {
+      content.push({ type: 'horizontalRule' });
+      i++;
+      continue;
+    }
+
+    // Regular paragraph
+    content.push({
+      type: 'paragraph',
+      content: parseInlineMarks(line)
+    });
+    i++;
+  }
 
   return {
-    type: "doc",
-    content: paragraphs.length > 0
-      ? paragraphs.map(p => ({
-          type: "paragraph",
-          content: [{ type: "text", text: p.trim() }]
-        }))
-      : [{ type: "paragraph" }]
+    type: 'doc',
+    content: content.length > 0 ? content : [{ type: 'paragraph' }]
   };
+}
+
+// Parse inline markdown marks (bold, italic, code, links)
+function parseInlineMarks(text: string): Record<string, unknown>[] {
+  const result: Record<string, unknown>[] = [];
+
+  // Regex patterns for inline elements
+  const pattern = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`|\[(.+?)\]\((.+?)\))/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    // Add text before match
+    if (match.index > lastIndex) {
+      result.push({ type: 'text', text: text.slice(lastIndex, match.index) });
+    }
+
+    if (match[2]) {
+      // Bold **text**
+      result.push({ type: 'text', text: match[2], marks: [{ type: 'bold' }] });
+    } else if (match[3]) {
+      // Italic *text*
+      result.push({ type: 'text', text: match[3], marks: [{ type: 'italic' }] });
+    } else if (match[4]) {
+      // Inline code `text`
+      result.push({ type: 'text', text: match[4], marks: [{ type: 'code' }] });
+    } else if (match[5] && match[6]) {
+      // Link [text](url)
+      result.push({
+        type: 'text',
+        text: match[5],
+        marks: [{ type: 'link', attrs: { href: match[6], target: '_blank' } }]
+      });
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    result.push({ type: 'text', text: text.slice(lastIndex) });
+  }
+
+  return result.length > 0 ? result : [{ type: 'text', text }];
+}
+
+// Legacy: Convert plain text to TipTap (kept for compatibility)
+function textToTipTap(text: string): Record<string, unknown> {
+  return markdownToTipTap(text);
 }
 
 // Extract plain text from TipTap content
