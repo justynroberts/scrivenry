@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Clock, Check, Archive, ExternalLink, Play, FileText, Bell, Info, AlertCircle, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -188,9 +190,13 @@ export function NotificationCard({ notification, onAction }: NotificationCardPro
         </div>
       </div>
 
-      {/* Message */}
+      {/* Message - Markdown Supported */}
       {notification.message && (
-        <p className="text-sm text-muted-foreground mb-3">{notification.message}</p>
+        <div className="text-sm text-muted-foreground mb-3 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-2 prose-a:text-primary">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {notification.message}
+          </ReactMarkdown>
+        </div>
       )}
 
       {/* Rich Content - Image */}
