@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Moon, Sun, Monitor, Palette, Leaf, Waves, Sparkles, Coffee, Snowflake, Heart, Type } from 'lucide-react'
+import { Moon, Sun, Monitor, Palette, Leaf, Waves, Sparkles, Coffee, Snowflake, Heart, Type, Maximize2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 type Theme = 'light' | 'dark' | 'system' | 'sepia' | 'nord' | 'dracula' | 'solarized-dark' | 'solarized-light' | 'ocean' | 'forest' | 'rose' | 'midnight'
 type Font = 'inter' | 'merriweather' | 'source-sans' | 'roboto' | 'open-sans' | 'lato' | 'nunito' | 'poppins' | 'space-grotesk' | 'system'
+type ContentWidth = 'narrow' | 'medium' | 'wide' | 'full'
 
 interface ThemeOption {
   value: Theme
@@ -25,13 +26,22 @@ interface FontOption {
   sample: string
 }
 
+interface ContentWidthOption {
+  value: ContentWidth
+  label: string
+  description: string
+  cssClass: string
+}
+
 export default function AppearancePage() {
   const [theme, setTheme] = useState<Theme>('dark')
   const [font, setFont] = useState<Font>('inter')
+  const [contentWidth, setContentWidth] = useState<ContentWidth>('medium')
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme | null
     const savedFont = localStorage.getItem('font') as Font | null
+    const savedWidth = localStorage.getItem('contentWidth') as ContentWidth | null
     if (savedTheme) {
       setTheme(savedTheme)
       applyThemeClass(savedTheme)
@@ -39,6 +49,9 @@ export default function AppearancePage() {
     if (savedFont) {
       setFont(savedFont)
       applyFontClass(savedFont)
+    }
+    if (savedWidth) {
+      setContentWidth(savedWidth)
     }
   }, [])
 
@@ -74,6 +87,20 @@ export default function AppearancePage() {
     localStorage.setItem('font', newFont)
     applyFontClass(newFont)
   }
+
+  function applyWidth(newWidth: ContentWidth) {
+    setContentWidth(newWidth)
+    localStorage.setItem('contentWidth', newWidth)
+    // Dispatch event so page editor can react
+    window.dispatchEvent(new CustomEvent('contentWidthChange', { detail: newWidth }))
+  }
+
+  const contentWidths: ContentWidthOption[] = [
+    { value: 'narrow', label: 'Narrow', description: 'Best for focused reading', cssClass: 'max-w-2xl' },
+    { value: 'medium', label: 'Medium', description: 'Balanced layout (default)', cssClass: 'max-w-3xl' },
+    { value: 'wide', label: 'Wide', description: 'More space for tables', cssClass: 'max-w-5xl' },
+    { value: 'full', label: 'Full', description: 'Use all available width', cssClass: 'max-w-none' },
+  ]
 
   const themes: ThemeOption[] = [
     { value: 'light', label: 'Light', icon: Sun, preview: { bg: '#ffffff', accent: '#171717' } },
@@ -166,6 +193,33 @@ export default function AppearancePage() {
                 {sample}
               </span>
               {font === value && (
+                <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
+              )}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content Width Section */}
+      <div className="mt-12">
+        <div className="flex items-center gap-2 mb-4">
+          <Maximize2 className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-medium">Content Width</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {contentWidths.map(({ value, label, description }) => (
+            <Button
+              key={value}
+              variant="outline"
+              onClick={() => applyWidth(value)}
+              className={cn(
+                'h-auto py-4 flex-col items-start gap-1 relative',
+                contentWidth === value && 'ring-2 ring-primary border-primary'
+              )}
+            >
+              <span className="text-sm font-medium">{label}</span>
+              <span className="text-xs text-muted-foreground">{description}</span>
+              {contentWidth === value && (
                 <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary" />
               )}
             </Button>

@@ -47,9 +47,33 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
   const [isFavorite, setIsFavorite] = useState(initialFavorite)
   const [zenMode, setZenMode] = useState(false)
   const [pageTags, setPageTags] = useState<Tag[]>(initialTags)
+  const [contentWidth, setContentWidth] = useState<string>('max-w-3xl')
   const saveTimeoutRef = useRef<NodeJS.Timeout>()
   const lastLocalEditRef = useRef<number>(0)
   const lastKnownUpdatedAt = useRef<string>(String(initialPage.updatedAt))
+
+  // Load content width from localStorage
+  useEffect(() => {
+    const widthMap: Record<string, string> = {
+      'narrow': 'max-w-2xl',
+      'medium': 'max-w-3xl',
+      'wide': 'max-w-5xl',
+      'full': 'max-w-none',
+    }
+    const saved = localStorage.getItem('contentWidth')
+    if (saved && widthMap[saved]) {
+      setContentWidth(widthMap[saved])
+    }
+
+    // Listen for changes from settings page
+    const handleWidthChange = (e: CustomEvent<string>) => {
+      if (widthMap[e.detail]) {
+        setContentWidth(widthMap[e.detail])
+      }
+    }
+    window.addEventListener('contentWidthChange', handleWidthChange as EventListener)
+    return () => window.removeEventListener('contentWidthChange', handleWidthChange as EventListener)
+  }, [])
 
   // Smart polling for external updates - only when tab is visible
   useEffect(() => {
@@ -293,7 +317,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
           </div>
         ) : null}
 
-        <div className={`max-w-3xl mx-auto px-8 py-6 ${page.cover ? '-mt-16 relative z-10' : ''}`}>
+        <div className={`${contentWidth} mx-auto px-8 py-6 ${page.cover ? '-mt-16 relative z-10' : ''}`}>
           {/* Breadcrumb */}
           {breadcrumb.length > 0 && (
             <nav className="flex items-center gap-1 text-sm text-muted-foreground mb-4" data-testid="breadcrumb">
@@ -535,7 +559,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
 
             {/* Centered content */}
             <div className="flex-1 overflow-auto">
-              <div className="max-w-2xl mx-auto px-8 py-16">
+              <div className={`${contentWidth} mx-auto px-8 py-16`}>
                 {/* Title */}
                 <div className="flex items-center gap-3 mb-8">
                   <span className="text-4xl">{page.icon || '📄'}</span>
