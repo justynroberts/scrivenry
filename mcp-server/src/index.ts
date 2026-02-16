@@ -511,6 +511,66 @@ function markdownToTipTap(markdown: string): Record<string, unknown> {
       continue;
     }
 
+    // Table (GFM style)
+    if (line.includes('|') && line.trim().startsWith('|')) {
+      const tableRows: string[][] = [];
+      let isHeader = true;
+
+      while (i < lines.length && lines[i].includes('|')) {
+        const rowLine = lines[i].trim();
+
+        // Skip separator row (|---|---|)
+        if (rowLine.match(/^\|[\s\-:]+\|$/)) {
+          i++;
+          isHeader = false;
+          continue;
+        }
+
+        // Parse cells
+        const cells = rowLine
+          .split('|')
+          .slice(1, -1) // Remove first and last empty elements
+          .map(cell => cell.trim());
+
+        if (cells.length > 0) {
+          tableRows.push(cells);
+        }
+        i++;
+      }
+
+      if (tableRows.length > 0) {
+        const headerRow = tableRows[0];
+        const bodyRows = tableRows.slice(1);
+
+        const tableContent: Record<string, unknown>[] = [];
+
+        // Header row
+        tableContent.push({
+          type: 'tableRow',
+          content: headerRow.map(cell => ({
+            type: 'tableHeader',
+            attrs: { colspan: 1, rowspan: 1 },
+            content: [{ type: 'paragraph', content: parseInlineMarks(cell) }]
+          }))
+        });
+
+        // Body rows
+        for (const row of bodyRows) {
+          tableContent.push({
+            type: 'tableRow',
+            content: row.map(cell => ({
+              type: 'tableCell',
+              attrs: { colspan: 1, rowspan: 1 },
+              content: [{ type: 'paragraph', content: parseInlineMarks(cell) }]
+            }))
+          });
+        }
+
+        content.push({ type: 'table', content: tableContent });
+      }
+      continue;
+    }
+
     // Horizontal rule
     if (line.match(/^(-{3,}|_{3,}|\*{3,})$/)) {
       content.push({ type: 'horizontalRule' });
