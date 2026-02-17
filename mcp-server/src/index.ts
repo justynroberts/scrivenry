@@ -412,6 +412,29 @@ const tools: Tool[] = [
   },
 ];
 
+// Check if a line is a table separator (|---|---|)
+function isTableSeparator(line: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed.includes('|')) return false;
+  // Match separator patterns like |---|---|, |:---:|---:|, etc.
+  return /^\|?[\s\-:|]+\|?$/.test(trimmed) && trimmed.includes('-');
+}
+
+// Check if a line looks like a table row
+function isTableRow(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.includes('|') && !isTableSeparator(line);
+}
+
+// Parse a table row into cells
+function parseTableRow(line: string): string[] {
+  let trimmed = line.trim();
+  // Remove leading/trailing pipes if present
+  if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
+  if (trimmed.endsWith('|')) trimmed = trimmed.slice(0, -1);
+  return trimmed.split('|').map(cell => cell.trim());
+}
+
 // Convert markdown to TipTap document format
 function markdownToTipTap(markdown: string): Record<string, unknown> {
   const lines = markdown.split('\n');
@@ -475,10 +498,30 @@ function markdownToTipTap(markdown: string): Record<string, unknown> {
       continue;
     }
 
+    // Task list (- [ ] or - [x])
+    if (line.match(/^[-*]\s+\[[ xX]\]\s+/)) {
+      const items: Record<string, unknown>[] = [];
+      while (i < lines.length && lines[i].match(/^[-*]\s+\[[ xX]\]\s+/)) {
+        const isChecked = /^[-*]\s+\[[xX]\]/.test(lines[i]);
+        const itemText = lines[i].replace(/^[-*]\s+\[[ xX]\]\s+/, '');
+        items.push({
+          type: 'taskItem',
+          attrs: { checked: isChecked },
+          content: [{
+            type: 'paragraph',
+            content: parseInlineMarks(itemText)
+          }]
+        });
+        i++;
+      }
+      content.push({ type: 'taskList', content: items });
+      continue;
+    }
+
     // Unordered list
     if (line.match(/^[-*]\s+/)) {
       const items: Record<string, unknown>[] = [];
-      while (i < lines.length && lines[i].match(/^[-*]\s+/)) {
+      while (i < lines.length && lines[i].match(/^[-*]\s+/) && !lines[i].match(/^[-*]\s+\[[ xX]\]/)) {
         const itemText = lines[i].replace(/^[-*]\s+/, '');
         items.push({
           type: 'listItem',
@@ -511,44 +554,43 @@ function markdownToTipTap(markdown: string): Record<string, unknown> {
       continue;
     }
 
-    // Table (GFM style)
-    if (line.includes('|') && line.trim().startsWith('|')) {
+    // Table (GFM style) - improved detection
+    if (isTableRow(line)) {
       const tableRows: string[][] = [];
-      let isHeader = true;
+      let hasHeader = false;
 
-      while (i < lines.length && lines[i].includes('|')) {
-        const rowLine = lines[i].trim();
+      // Collect all table rows
+      while (i < lines.length) {
+        const currentLine = lines[i];
 
-        // Skip separator row (|---|---|)
-        if (rowLine.match(/^\|[\s\-:]+\|$/)) {
+        if (isTableSeparator(currentLine)) {
+          hasHeader = true;
           i++;
-          isHeader = false;
           continue;
         }
 
-        // Parse cells
-        const cells = rowLine
-          .split('|')
-          .slice(1, -1) // Remove first and last empty elements
-          .map(cell => cell.trim());
-
-        if (cells.length > 0) {
-          tableRows.push(cells);
+        if (isTableRow(currentLine)) {
+          tableRows.push(parseTableRow(currentLine));
+          i++;
+          continue;
         }
-        i++;
+
+        // Not a table line, stop
+        break;
       }
 
       if (tableRows.length > 0) {
-        const headerRow = tableRows[0];
-        const bodyRows = tableRows.slice(1);
-
         const tableContent: Record<string, unknown>[] = [];
 
-        // Header row
+        // First row is header if we found a separator
+        const headerRow = tableRows[0];
+        const bodyRows = hasHeader ? tableRows.slice(1) : [];
+
+        // Header row (or first row if no separator)
         tableContent.push({
           type: 'tableRow',
           content: headerRow.map(cell => ({
-            type: 'tableHeader',
+            type: hasHeader ? 'tableHeader' : 'tableCell',
             attrs: { colspan: 1, rowspan: 1 },
             content: [{ type: 'paragraph', content: parseInlineMarks(cell) }]
           }))
@@ -556,6 +598,10 @@ function markdownToTipTap(markdown: string): Record<string, unknown> {
 
         // Body rows
         for (const row of bodyRows) {
+          // Pad row to match header length if needed
+          while (row.length < headerRow.length) {
+            row.push('');
+          }
           tableContent.push({
             type: 'tableRow',
             content: row.map(cell => ({
@@ -592,12 +638,13 @@ function markdownToTipTap(markdown: string): Record<string, unknown> {
   };
 }
 
-// Parse inline markdown marks (bold, italic, code, links)
+// Parse inline markdown marks (bold, italic, code, links, strikethrough)
 function parseInlineMarks(text: string): Record<string, unknown>[] {
   const result: Record<string, unknown>[] = [];
 
-  // Regex patterns for inline elements
-  const pattern = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`|\[(.+?)\]\((.+?)\))/g;
+  // Process text character by character to handle nested/overlapping marks
+  // Patterns: **bold**, *italic*, `code`, [text](url), ~~strikethrough~~
+  const pattern = /(\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|_([^_]+)_|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/g;
   let lastIndex = 0;
   let match;
 
@@ -611,17 +658,26 @@ function parseInlineMarks(text: string): Record<string, unknown>[] {
       // Bold **text**
       result.push({ type: 'text', text: match[2], marks: [{ type: 'bold' }] });
     } else if (match[3]) {
-      // Italic *text*
-      result.push({ type: 'text', text: match[3], marks: [{ type: 'italic' }] });
+      // Bold __text__
+      result.push({ type: 'text', text: match[3], marks: [{ type: 'bold' }] });
     } else if (match[4]) {
+      // Strikethrough ~~text~~
+      result.push({ type: 'text', text: match[4], marks: [{ type: 'strike' }] });
+    } else if (match[5]) {
+      // Italic *text*
+      result.push({ type: 'text', text: match[5], marks: [{ type: 'italic' }] });
+    } else if (match[6]) {
+      // Italic _text_
+      result.push({ type: 'text', text: match[6], marks: [{ type: 'italic' }] });
+    } else if (match[7]) {
       // Inline code `text`
-      result.push({ type: 'text', text: match[4], marks: [{ type: 'code' }] });
-    } else if (match[5] && match[6]) {
+      result.push({ type: 'text', text: match[7], marks: [{ type: 'code' }] });
+    } else if (match[8] && match[9]) {
       // Link [text](url)
       result.push({
         type: 'text',
-        text: match[5],
-        marks: [{ type: 'link', attrs: { href: match[6], target: '_blank' } }]
+        text: match[8],
+        marks: [{ type: 'link', attrs: { href: match[9], target: '_blank' } }]
       });
     }
 
@@ -633,7 +689,15 @@ function parseInlineMarks(text: string): Record<string, unknown>[] {
     result.push({ type: 'text', text: text.slice(lastIndex) });
   }
 
-  return result.length > 0 ? result : [{ type: 'text', text }];
+  // Handle empty text case
+  if (result.length === 0) {
+    if (text.trim()) {
+      return [{ type: 'text', text }];
+    }
+    return [];
+  }
+
+  return result;
 }
 
 // Legacy: Convert plain text to TipTap (kept for compatibility)
@@ -677,7 +741,7 @@ function formatNotification(n: Notification): string {
 const server = new Server(
   {
     name: "scrivenry-mcp-server",
-    version: "1.2.0",
+    version: "1.3.0",
   },
   {
     capabilities: {
