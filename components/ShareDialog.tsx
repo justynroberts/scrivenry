@@ -95,9 +95,27 @@ export function ShareDialog({ pageId, pageTitle, open, onOpenChange }: ShareDial
   const copyLink = async () => {
     if (!share) return
     const url = `${window.location.origin}/share/${share.id}`
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      // Fallback for older browsers or non-HTTPS
+      const textArea = document.createElement('textarea')
+      textArea.value = url
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-9999px'
+      document.body.appendChild(textArea)
+      textArea.select()
+      try {
+        document.execCommand('copy')
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (e) {
+        console.error('Copy failed:', e)
+      }
+      document.body.removeChild(textArea)
+    }
   }
 
   const shareUrl = share ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${share.id}` : ''
@@ -135,8 +153,8 @@ export function ShareDialog({ pageId, pageTitle, open, onOpenChange }: ShareDial
 
               {/* Link input */}
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-muted rounded-md px-3 py-2 text-sm truncate font-mono">
-                  {shareUrl}
+                <div className="flex-1 min-w-0 bg-muted rounded-md px-3 py-2 text-sm font-mono overflow-hidden">
+                  <span className="block truncate">{shareUrl}</span>
                 </div>
                 <Button
                   variant="outline"
