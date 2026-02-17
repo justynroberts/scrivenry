@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronRight, ImageIcon, MoreHorizontal, Star, Keyboard, Sparkles, Trash2, Copy, Focus, X } from 'lucide-react'
+import { ChevronRight, ImageIcon, MoreHorizontal, Star, Keyboard, Sparkles, Trash2, Copy, Focus, X, Globe } from 'lucide-react'
 import { Editor } from '@/components/editor/Editor'
 import { Button } from '@/components/ui/button'
 import { EmojiPicker } from '@/components/EmojiPicker'
@@ -12,6 +12,7 @@ import { KeyboardShortcuts } from '@/components/KeyboardShortcuts'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { AIChat } from '@/components/editor/AIChat'
 import { TagPicker } from '@/components/TagPicker'
+import { ShareDialog } from '@/components/ShareDialog'
 import { usePages } from '@/lib/contexts/PageContext'
 import {
   DropdownMenu,
@@ -46,6 +47,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [isFavorite, setIsFavorite] = useState(initialFavorite)
   const [zenMode, setZenMode] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [pageTags, setPageTags] = useState<Tag[]>(initialTags)
   const [contentWidth, setContentWidth] = useState<string>('max-w-3xl')
   const saveTimeoutRef = useRef<NodeJS.Timeout>()
@@ -448,6 +450,20 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
                 <TooltipContent>Zen mode (Cmd+.)</TooltipContent>
               </Tooltip>
 
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShareOpen(true)}
+                    data-testid="share-btn"
+                  >
+                    <Globe className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Share to web</TooltipContent>
+              </Tooltip>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" data-testid="page-menu">
@@ -455,6 +471,10 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShareOpen(true)}>
+                    <Globe className="h-4 w-4 mr-2" />
+                    Share to web
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleDuplicate}>
                     <Copy className="h-4 w-4 mr-2" />
                     Duplicate
@@ -535,6 +555,14 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
           cancelLabel="Cancel"
           variant="destructive"
           onConfirm={confirmDelete}
+        />
+
+        {/* Share Dialog */}
+        <ShareDialog
+          pageId={page.id}
+          pageTitle={page.title}
+          open={shareOpen}
+          onOpenChange={setShareOpen}
         />
 
         {/* Zen Mode Overlay */}
