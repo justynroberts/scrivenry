@@ -190,8 +190,8 @@ const tools: Tool[] = [
           description: "Workspace ID (uses default if not specified)",
         },
         content: {
-          type: "object",
-          description: "Optional TipTap JSON content for the page",
+          type: "string",
+          description: "Optional content for the page (markdown string - will be converted to TipTap format)",
         },
       },
       required: ["title"],
@@ -741,7 +741,7 @@ function formatNotification(n: Notification): string {
 const server = new Server(
   {
     name: "scrivenry-mcp-server",
-    version: "1.3.0",
+    version: "1.4.0",
   },
   {
     capabilities: {
@@ -830,7 +830,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
         if (args.icon) body.icon = args.icon;
         if (args.parent_id) body.parent_id = args.parent_id;
-        if (args.content) body.content = args.content;
+        if (args.content) {
+          body.content = markdownToTipTap(String(args.content));
+        }
 
         const result = await apiRequest<PageResponse>("/pages", "POST", body);
 
