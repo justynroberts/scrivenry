@@ -91,6 +91,69 @@ interface NotificationResponse {
   notification: Notification;
 }
 
+// Document type configurations for auto-organization
+interface DocTypeConfig {
+  prefix: string;
+  icon: string;
+  parentFolder: string;
+  parentIcon: string;
+}
+
+const DOC_TYPES: DocTypeConfig[] = [
+  { prefix: 'PRD:', icon: '📋', parentFolder: 'Projects', parentIcon: '📁' },
+  { prefix: 'Arch:', icon: '🏗️', parentFolder: 'Architecture', parentIcon: '🏗️' },
+  { prefix: 'API:', icon: '🔌', parentFolder: 'Documentation', parentIcon: '📚' },
+  { prefix: 'ADR:', icon: '📝', parentFolder: 'Architecture', parentIcon: '🏗️' },
+  { prefix: 'Catalog:', icon: '🚀', parentFolder: 'Operations', parentIcon: '⚙️' },
+  { prefix: 'Guide:', icon: '📖', parentFolder: 'Documentation', parentIcon: '📚' },
+  { prefix: 'Runbook:', icon: '🔧', parentFolder: 'Operations', parentIcon: '⚙️' },
+  { prefix: 'RFC:', icon: '💡', parentFolder: 'Architecture', parentIcon: '🏗️' },
+  { prefix: 'Meeting:', icon: '📅', parentFolder: 'Notes', parentIcon: '📝' },
+  { prefix: 'Notes:', icon: '📝', parentFolder: 'Notes', parentIcon: '📝' },
+];
+
+// Detect document type from title
+function detectDocType(title: string): DocTypeConfig | null {
+  for (const docType of DOC_TYPES) {
+    if (title.startsWith(docType.prefix)) {
+      return docType;
+    }
+  }
+  return null;
+}
+
+// Find or create a parent folder
+async function findOrCreateFolder(
+  workspaceId: string,
+  folderName: string,
+  folderIcon: string
+): Promise<string> {
+  // Search for existing folder
+  const searchResult = await apiRequest<{ results: Array<{ id: string; title: string }> }>(
+    `/search?q=${encodeURIComponent(folderName)}&limit=50`
+  );
+
+  // Find exact match at root level (no parent)
+  for (const result of searchResult.results) {
+    if (result.title === folderName) {
+      // Verify it's a root-level page by fetching it
+      const pageResult = await apiRequest<PageResponse>(`/pages/${result.id}`);
+      if (!pageResult.page.parent_id) {
+        return result.id;
+      }
+    }
+  }
+
+  // Create the folder if not found
+  const newFolder = await apiRequest<PageResponse>('/pages', 'POST', {
+    workspace_id: workspaceId,
+    title: folderName,
+    icon: folderIcon,
+  });
+
+  return newFolder.page.id;
+}
+
 async function apiRequest<T>(
   endpoint: string,
   method: string = "GET",
@@ -169,21 +232,21 @@ const tools: Tool[] = [
   {
     name: "scrivenry_create_page",
     description:
-      "Create a new page/document in Scrivenry. Returns the created page with its ID.",
+      "Create a new page/document in Scrivenry. Auto-organizes based on title prefix: PRD: → Projects, Arch:/ADR:/RFC: → Architecture, API:/Guide: → Documentation, Catalog:/Runbook: → Operations, Meeting:/Notes: → Notes. Icons are auto-assigned based on type.",
     inputSchema: {
       type: "object",
       properties: {
         title: {
           type: "string",
-          description: "The title of the new page",
+          description: "The title. Use prefixes for auto-organization: 'PRD: My Feature', 'Arch: System Design', 'API: Users Service', 'Catalog: Services', 'Runbook: Deploy', 'ADR: Database Choice', 'RFC: New API', 'Guide: Setup', 'Meeting: Sprint Review', 'Notes: Ideas'",
         },
         icon: {
           type: "string",
-          description: "Optional emoji icon for the page (e.g., '📄')",
+          description: "Optional emoji icon (auto-assigned based on prefix if not provided)",
         },
         parent_id: {
           type: "string",
-          description: "Optional parent page ID to create as a child page",
+          description: "Optional parent page ID (auto-assigned based on prefix if not provided)",
         },
         workspace_id: {
           type: "string",
@@ -741,7 +804,7 @@ function formatNotification(n: Notification): string {
 const server = new Server(
   {
     name: "scrivenry-mcp-server",
-    version: "1.4.0",
+    version: "1.5.0",
   },
   {
     capabilities: {
@@ -813,6 +876,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           throw new Error("title is required");
         }
 
+        const title = String(args.title);
+
         // Get default workspace if not provided
         let workspaceId = args.workspace_id as string | undefined;
         if (!workspaceId) {
@@ -824,23 +889,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
         }
 
+        // Detect document type for auto-organization
+        const docType = detectDocType(title);
+        let parentId = args.parent_id as string | undefined;
+        let icon = args.icon as string | undefined;
+        let organizedUnder = '';
+
+        // Auto-assign icon and parent based on document type
+        if (docType) {
+          // Auto-assign icon if not provided
+          if (!icon) {
+            icon = docType.icon;
+          }
+          // Auto-assign parent folder if not provided
+          if (!parentId) {
+            parentId = await findOrCreateFolder(workspaceId, docType.parentFolder, docType.parentIcon);
+            organizedUnder = docType.parentFolder;
+          }
+        }
+
         const body: Record<string, unknown> = {
           workspace_id: workspaceId,
-          title: args.title,
+          title: title,
         };
-        if (args.icon) body.icon = args.icon;
-        if (args.parent_id) body.parent_id = args.parent_id;
+        if (icon) body.icon = icon;
+        if (parentId) body.parent_id = parentId;
         if (args.content) {
           body.content = markdownToTipTap(String(args.content));
         }
 
         const result = await apiRequest<PageResponse>("/pages", "POST", body);
 
+        const locationInfo = organizedUnder ? ` (filed under ${organizedUnder})` : '';
         return {
           content: [
             {
               type: "text",
-              text: `Created page "${result.page.title}" with ID: ${result.page.id}`,
+              text: `Created page "${result.page.title}" with ID: ${result.page.id}${locationInfo}`,
             },
           ],
         };
