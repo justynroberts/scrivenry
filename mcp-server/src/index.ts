@@ -921,11 +921,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const result = await apiRequest<PageResponse>("/pages", "POST", body);
 
         const locationInfo = organizedUnder ? ` (filed under ${organizedUnder})` : '';
+        const pageUrl = `${SCRIVENRY_URL}/page/${result.page.id}`;
         return {
           content: [
             {
               type: "text",
-              text: `Created page "${result.page.title}" with ID: ${result.page.id}${locationInfo}`,
+              text: `Created page "${result.page.title}" with ID: ${result.page.id}${locationInfo}\nURL: ${pageUrl}`,
             },
           ],
         };
@@ -958,7 +959,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `Updated page "${result.page.title}" (ID: ${result.page.id})`,
+              text: `Updated page "${result.page.title}" (ID: ${result.page.id})\nURL: ${SCRIVENRY_URL}/page/${result.page.id}`,
             },
           ],
         };
@@ -1036,7 +1037,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: "text",
-              text: `Moved page "${result.page.title}" ${destination}`,
+              text: `Moved page "${result.page.title}" ${destination}\nURL: ${SCRIVENRY_URL}/page/${result.page.id}`,
             },
           ],
         };
