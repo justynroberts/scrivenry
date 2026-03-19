@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  scrivenry:
+    image: scrivenry:latest
+    container_name: scrivenry
+    restart: unless-stopped
+    expose:
+      - "3847"
+    volumes:
+      - /tmp/scrivenry.db:/app/data/scrivenry.db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.scrivenry.rule=PathPrefix(`/scrivenry`)"
+      - "traefik.http.routers.scrivenry.entrypoints=websecure"
+      - "traefik.http.routers.scrivenry.tls=true"
+      - "traefik.http.services.scrivenry.loadbalancer.server.port=3847"
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    external: true

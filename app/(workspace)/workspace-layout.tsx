@@ -34,7 +34,7 @@ function WorkspaceContent({
   useEffect(() => {
     async function checkTourStatus() {
       try {
-        const res = await fetch('/api/user/tour')
+        const res = await fetch('api/user/tour')
         if (res.ok) {
           const data = await res.json()
           if (!data.hasSeenTour) {
@@ -53,7 +53,7 @@ function WorkspaceContent({
   useEffect(() => {
     async function loadFavorites() {
       try {
-        const res = await fetch('/api/favorites')
+        const res = await fetch('api/favorites')
         if (res.ok) {
           const data = await res.json()
           setFavorites(data.favorites || [])
@@ -67,7 +67,7 @@ function WorkspaceContent({
 
   const handleCreatePage = useCallback(async (parentId?: string) => {
     try {
-      const res = await fetch('/api/pages', {
+      const res = await fetch('api/pages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -131,7 +131,7 @@ function WorkspaceContent({
 
     // Persist to backend
     try {
-      await fetch('/api/pages/reorder', {
+      await fetch('api/pages/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageIds }),
@@ -153,7 +153,7 @@ function WorkspaceContent({
 
     // Persist to backend
     try {
-      await fetch('/api/pages/move', {
+      await fetch('api/pages/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageId, newParentId }),
@@ -167,7 +167,7 @@ function WorkspaceContent({
   useEffect(() => {
     async function fetchUnreadCount() {
       try {
-        const res = await fetch('/api/notifications?status=unread&limit=1')
+        const res = await fetch('api/notifications?status=unread&limit=1')
         if (res.ok) {
           const data = await res.json()
           const newCount = data.unread_count || 0

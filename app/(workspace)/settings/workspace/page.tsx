@@ -25,7 +25,7 @@ export default function WorkspaceSettingsPage() {
 
   async function fetchWorkspace() {
     try {
-      const response = await fetch('/api/workspace')
+      const response = await fetch('api/workspace')
       if (response.ok) {
         const data = await response.json()
         setWorkspace(data)
@@ -48,7 +48,7 @@ export default function WorkspaceSettingsPage() {
     setError('')
 
     try {
-      const response = await fetch('/api/workspace', {
+      const response = await fetch('api/workspace', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim() }),
@@ -76,7 +76,7 @@ export default function WorkspaceSettingsPage() {
     setExporting(true)
 
     try {
-      const response = await fetch('/api/workspace/export')
+      const response = await fetch('api/workspace/export')
       if (response.ok) {
         const blob = await response.blob()
         const url = URL.createObjectURL(blob)

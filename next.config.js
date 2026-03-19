@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Removed 'standalone' output - it causes issues with npm run start
+  output: 'standalone',
+  basePath: '/scrivenry',
   serverExternalPackages: ['better-sqlite3'],
 }
 

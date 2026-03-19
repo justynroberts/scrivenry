@@ -23,7 +23,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     setMessage(null)
 
     try {
-      const res = await fetch('/api/user', {
+      const res = await fetch('api/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),

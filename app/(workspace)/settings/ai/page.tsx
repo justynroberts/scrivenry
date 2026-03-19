@@ -102,7 +102,7 @@ export default function AISettingsPage() {
     setModelsError('')
 
     try {
-      const response = await fetch('/api/ai/models', {
+      const response = await fetch('api/ai/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, endpoint }),
@@ -164,7 +164,7 @@ export default function AISettingsPage() {
     setTestMessage('')
 
     try {
-      const response = await fetch('/api/ai/test', {
+      const response = await fetch('api/ai/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
