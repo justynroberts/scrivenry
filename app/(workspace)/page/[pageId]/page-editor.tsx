@@ -216,13 +216,13 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
   const toggleFavorite = useCallback(async () => {
     try {
       if (isFavorite) {
-        await fetch('/api/favorites', {
+        await fetch('api/favorites', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pageId: page.id }),
         })
       } else {
-        await fetch('/api/favorites', {
+        await fetch('api/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pageId: page.id }),

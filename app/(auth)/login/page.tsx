@@ -22,7 +22,8 @@ export default function LoginPage() {
     const password = formData.get('password') as string
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/scrivenry/api/auth/login', {
+        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -30,6 +31,7 @@ export default function LoginPage() {
 
       const data = await res.json()
 
+      if (data.token) localStorage.setItem('auth-token', data.token)
       if (!res.ok) {
         setError(data.error || 'Failed to login')
         return

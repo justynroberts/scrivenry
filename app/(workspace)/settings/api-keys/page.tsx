@@ -35,7 +35,7 @@ export default function ApiKeysPage() {
 
   async function fetchKeys() {
     try {
-      const res = await fetch('/api/api-keys')
+      const res = await fetch('api/api-keys')
       if (res.ok) {
         const data = await res.json()
         setKeys(data.keys)
@@ -49,7 +49,7 @@ export default function ApiKeysPage() {
 
   async function createKey() {
     try {
-      const res = await fetch('/api/api-keys', {
+      const res = await fetch('api/api-keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newKeyName }),
