@@ -48,3 +48,10 @@ next-env.d.ts
 
 # Vercel
 .vercel
+
+# Environment files
+.env
+.env.local
+.env.production.local
+.env.*.local
+docker-compose.yml

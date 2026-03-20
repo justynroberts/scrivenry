@@ -23,7 +23,6 @@ export default function LoginPage() {
 
     try {
       const res = await fetch('/scrivenry/api/auth/login', {
-        credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -31,14 +30,25 @@ export default function LoginPage() {
 
       const data = await res.json()
 
-      if (data.token) localStorage.setItem('auth-token', data.token)
       if (!res.ok) {
         setError(data.error || 'Failed to login')
         return
       }
 
-      router.push('/')
-      router.refresh()
+      if (data.token) {
+        // Store in localStorage
+        localStorage.setItem('auth-token', data.token)
+        
+        // Also set as cookie manually
+        document.cookie = `auth-token=${data.token}; path=/; max-age=604800; secure; samesite=lax`
+        
+        // Wait a moment for cookie to be set
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Now navigate
+        router.push('/')
+        router.refresh()
+      }
     } catch {
       setError('An error occurred')
     } finally {
