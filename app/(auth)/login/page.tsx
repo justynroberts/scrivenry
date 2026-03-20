@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { FileText } from 'lucide-react'
+import { apiFetch } from '@/lib/api-client'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -15,7 +16,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     // Fetch CSRF token on mount
-    fetch('/scrivenry/api/auth/csrf')
+    apiFetch('/api/auth/csrf')
       .then(res => res.json())
       .then(data => setCsrfToken(data.csrfToken))
       .catch(() => setError('Failed to initialize. Please refresh the page.'))
@@ -31,7 +32,7 @@ export default function LoginPage() {
     const password = formData.get('password') as string
 
     try {
-      const res = await fetch('/scrivenry/api/auth/login', {
+      const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

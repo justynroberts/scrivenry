@@ -7,7 +7,7 @@ services:
     expose:
       - "3847"
     volumes:
-      - /tmp/scrivenry.db:/app/data/scrivenry.db
+      - /home/justyn/scrivenry-data:/app/data
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.scrivenry.rule=PathPrefix(`/scrivenry`)"

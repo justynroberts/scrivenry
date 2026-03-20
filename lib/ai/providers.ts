@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/api-client'
 export type AIProvider = 'anthropic' | 'ollama' | 'openai'
 
 export interface AISettings {
@@ -44,7 +45,7 @@ export async function callAI(
     throw new Error('AI not configured. Please set up AI in Settings > AI.')
   }
 
-  const response = await fetch('/api/ai/chat', {
+  const response = await apiFetch('/api/ai/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -72,7 +73,7 @@ export async function streamAI(
     throw new Error('AI not configured. Please set up AI in Settings > AI.')
   }
 
-  const response = await fetch('/api/ai/stream', {
+  const response = await apiFetch('/api/ai/stream', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

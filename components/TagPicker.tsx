@@ -9,6 +9,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import type { Tag } from '@/lib/db/schema'
+import { apiFetch } from '@/lib/api-client'
 
 const TAG_COLORS = [
   '#ef4444', // red
@@ -41,7 +42,7 @@ export function TagPicker({ pageId, workspaceId, pageTags, onTagsChange }: TagPi
   useEffect(() => {
     async function fetchTags() {
       try {
-        const res = await fetch(`/api/tags?workspace_id=${workspaceId}`)
+        const res = await apiFetch(`/api/tags?workspace_id=${workspaceId}`)
         if (res.ok) {
           const data = await res.json()
           setAllTags(data.tags || [])
@@ -57,7 +58,7 @@ export function TagPicker({ pageId, workspaceId, pageTags, onTagsChange }: TagPi
 
   const handleAddTag = async (tag: Tag) => {
     try {
-      await fetch(`/api/pages/${pageId}/tags`, {
+      await apiFetch(`/api/pages/${pageId}/tags`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tagId: tag.id }),
@@ -70,7 +71,7 @@ export function TagPicker({ pageId, workspaceId, pageTags, onTagsChange }: TagPi
 
   const handleRemoveTag = async (tagId: string) => {
     try {
-      await fetch(`/api/pages/${pageId}/tags`, {
+      await apiFetch(`/api/pages/${pageId}/tags`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tagId }),
@@ -86,7 +87,7 @@ export function TagPicker({ pageId, workspaceId, pageTags, onTagsChange }: TagPi
 
     setLoading(true)
     try {
-      const res = await fetch('/api/tags', {
+      const res = await apiFetch('/api/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

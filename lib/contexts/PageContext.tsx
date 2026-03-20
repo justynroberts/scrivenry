@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useCallback, useState, useEffect, useRef, type ReactNode } from 'react'
 import type { Page } from '@/lib/db/schema'
+import { apiFetch } from '@/lib/api-client'
 
 interface PageContextType {
   pages: Page[]
@@ -34,7 +35,7 @@ export function PageProvider({ children, initialPages }: PageProviderProps) {
       }
 
       try {
-        const res = await fetch('/api/pages')
+        const res = await apiFetch('/api/pages')
         if (!res.ok) return
 
         const { pages: serverPages } = await res.json()
