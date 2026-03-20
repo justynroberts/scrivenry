@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,15 @@ export default function LoginPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [csrfToken, setCsrfToken] = useState<string>('')
+
+  useEffect(() => {
+    // Fetch CSRF token on mount
+    fetch('/scrivenry/api/auth/csrf')
+      .then(res => res.json())
+      .then(data => setCsrfToken(data.csrfToken))
+      .catch(() => setError('Failed to initialize. Please refresh the page.'))
+  }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -25,30 +34,25 @@ export default function LoginPage() {
       const res = await fetch('/scrivenry/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+        body: JSON.stringify({ email, password, csrfToken }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Failed to login')
+        if (res.status === 429) {
+          setError('Too many login attempts. Please try again in 15 minutes.')
+        } else {
+          setError(data.error || 'Failed to login')
+        }
         return
       }
 
-      if (data.token) {
-        // Store in localStorage
-        localStorage.setItem('auth-token', data.token)
-        
-        // Also set as cookie manually
-        document.cookie = `auth-token=${data.token}; path=/; max-age=604800; secure; samesite=lax`
-        
-        // Wait a moment for cookie to be set
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
-        // Now navigate
-        router.push('/')
-        router.refresh()
-      }
+      // Cookie is set by the server (httpOnly)
+      // Just navigate - browser handles the cookie automatically
+      router.push('/')
+      router.refresh()
     } catch {
       setError('An error occurred')
     } finally {
@@ -98,7 +102,7 @@ export default function LoginPage() {
             <p className="text-sm text-destructive">{error}</p>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || !csrfToken}>
             {loading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>

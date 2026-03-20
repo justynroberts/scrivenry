@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,15 @@ export default function RegisterPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [csrfToken, setCsrfToken] = useState<string>('')
+
+  useEffect(() => {
+    // Fetch CSRF token on mount
+    fetch('/scrivenry/api/auth/csrf')
+      .then(res => res.json())
+      .then(data => setCsrfToken(data.csrfToken))
+      .catch(() => setError('Failed to initialize. Please refresh the page.'))
+  }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -23,19 +32,25 @@ export default function RegisterPage() {
     const password = formData.get('password') as string
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await fetch('/scrivenry/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        credentials: 'include',
+        body: JSON.stringify({ name, email, password, csrfToken }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Failed to register')
+        if (res.status === 429) {
+          setError('Too many registration attempts. Please try again later.')
+        } else {
+          setError(data.error || 'Failed to register')
+        }
         return
       }
 
+      // Cookie is set by the server (httpOnly)
       router.push('/')
       router.refresh()
     } catch {
@@ -101,7 +116,7 @@ export default function RegisterPage() {
             <p className="text-sm text-destructive">{error}</p>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || !csrfToken}>
             {loading ? 'Creating account...' : 'Create account'}
           </Button>
         </form>
