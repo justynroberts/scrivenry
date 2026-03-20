@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateRequest } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { getPageForUser } from '@/lib/db/tenancy'
 import { pageVersions, pages } from '@/lib/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { ulid } from 'ulid'
@@ -43,9 +44,8 @@ export async function POST(
     const { id } = await params
 
     // Get current page content
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, id),
-    })
+    // TENANT ISOLATION: verify user owns this page
+    const page = await getPageForUser(user.id, id)
 
     if (!page) {
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })

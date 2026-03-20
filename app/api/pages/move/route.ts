@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateRequest } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { getPageForUser } from '@/lib/db/tenancy'
 import { pages } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
@@ -22,9 +23,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the page being moved
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, pageId),
-    })
+    // TENANT ISOLATION: verify user owns this page
+    const page = await getPageForUser(user.id, pageId)
 
     if (!page) {
       return NextResponse.json(
@@ -39,9 +39,8 @@ export async function POST(request: NextRequest) {
 
     if (newParentId) {
       // Verify parent exists
-      const parent = await db.query.pages.findFirst({
-        where: eq(pages.id, newParentId),
-      })
+      // TENANT ISOLATION: verify user owns parent page too
+      const parent = await getPageForUser(user.id, newParentId)
 
       if (!parent) {
         return NextResponse.json(

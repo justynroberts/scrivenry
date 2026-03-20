@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
     const workspaceId = searchParams.get('workspace_id')
     const parentId = searchParams.get('parent_id')
 
-    let whereClause = isNull(pages.deletedAt)
+    // TENANT ISOLATION: always filter by the authenticated user's own pages
+    let whereClause = and(isNull(pages.deletedAt), eq(pages.createdBy, user.id))!
 
     if (workspaceId) {
       whereClause = and(whereClause, eq(pages.workspaceId, workspaceId))!
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     if (parentId) {
       const parent = await db.query.pages.findFirst({
-        where: eq(pages.id, parentId),
+        where: and(eq(pages.id, parentId), eq(pages.createdBy, user.id)),
       })
       if (parent) {
         path = [...(parent.path || []), parent.id]
@@ -72,11 +73,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get position
+    // Get position (only among user's own pages)
     const siblings = await db.query.pages.findMany({
       where: parentId
-        ? and(eq(pages.parentId, parentId), isNull(pages.deletedAt))
-        : and(eq(pages.workspaceId, workspaceId), isNull(pages.parentId), isNull(pages.deletedAt)),
+        ? and(eq(pages.parentId, parentId), isNull(pages.deletedAt), eq(pages.createdBy, user.id))
+        : and(eq(pages.workspaceId, workspaceId), isNull(pages.parentId), isNull(pages.deletedAt), eq(pages.createdBy, user.id)),
     })
     const position = siblings.length
 

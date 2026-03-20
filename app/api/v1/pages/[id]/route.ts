@@ -4,6 +4,7 @@ import { pages, apiKeys } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { createHash } from 'crypto'
 import { pageEvents } from '@/lib/events'
+import { getPageForUser } from '@/lib/db/tenancy'
 
 interface RouteParams {
   params: Promise<{
@@ -55,9 +56,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const searchParams = request.nextUrl.searchParams
     const includeBlocks = searchParams.get('include_blocks') === 'true'
 
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, id),
-    })
+    // TENANT ISOLATION: verify API key user owns this page
+    const page = await getPageForUser(auth.userId, id)
 
     if (!page || page.deletedAt) {
       return NextResponse.json(
@@ -109,9 +109,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const { id } = await params
     const body = await request.json()
 
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, id),
-    })
+    // TENANT ISOLATION: verify API key user owns this page
+    const page = await getPageForUser(auth.userId, id)
 
     if (!page || page.deletedAt) {
       return NextResponse.json(

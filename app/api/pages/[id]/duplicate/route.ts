@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { pages, Page } from '@/lib/db/schema'
 import { eq, and, isNull } from 'drizzle-orm'
 import { ulid } from 'ulid'
+import { getPageForUser } from '@/lib/db/tenancy'
 
 interface RouteParams {
   params: Promise<{
@@ -93,9 +94,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       // No body or invalid JSON, use defaults
     }
 
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, id),
-    })
+    // TENANT ISOLATION: verify user owns this page
+    const page = await getPageForUser(user.id, id)
 
     if (!page || page.deletedAt) {
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
