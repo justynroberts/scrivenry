@@ -5,7 +5,6 @@ import { cookies } from 'next/headers'
 import { cache } from 'react'
 import { createHmac } from 'crypto'
 
-// Password hashing
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder()
   const data = encoder.encode(password)
@@ -18,7 +17,6 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return (await hashPassword(password)) === hash
 }
 
-// Simple JWT using Node crypto
 export function generateJWTSync(payload: Record<string, any>): string {
   const secret = process.env.JWT_SECRET || 'scrivenry-jwt-prod-secret-2026'
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
@@ -47,22 +45,6 @@ export function validateJWTSync(token: string): Record<string, any> | null {
   }
 }
 
-export async function setAuthCookie(token: string) {
-  const cookieStore = await cookies()
-  cookieStore.set('auth-token', token, {
-    path: '/',
-    secure: process.env.AUTH_SECURE_COOKIES === 'true',
-    httpOnly: false,
-    sameSite: 'lax',
-    maxAge: 604800,
-  })
-}
-
-export async function clearAuthCookie() {
-  const cookieStore = await cookies()
-  cookieStore.delete('auth-token')
-}
-
 export const validateRequest = cache(async () => {
   const cookieStore = await cookies()
   const token = cookieStore.get('auth-token')?.value
@@ -78,10 +60,13 @@ export const validateRequest = cache(async () => {
 
   try {
     const user = await db.query.users.findFirst({
-      where: eq(users.id, payload.sub),
+      where: eq(users.id, payload.userId),
     })
+    if (!user) {
+      return { user: null, session: null }
+    }
     return {
-      user: user ? { id: user.id, email: user.email, name: user.name } : null,
+      user: { id: user.id, email: user.email, name: user.name },
       session: payload
     }
   } catch {

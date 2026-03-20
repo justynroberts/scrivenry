@@ -21,16 +21,11 @@ export async function POST(request: Request) {
 
     const token = generateJWTSync({ userId: user.id, email: user.email })
 
-    const response = NextResponse.json({ success: true, token, user: { id: user.id, email: user.email, name: user.name } })
-    response.cookies.set('auth-token', token, {
-      path: '/',
-      secure: process.env.AUTH_SECURE_COOKIES === 'true',
-      httpOnly: false,
-      sameSite: 'lax',
-      maxAge: 604800,
+    return NextResponse.json({ 
+      success: true, 
+      token, 
+      user: { id: user.id, email: user.email, name: user.name } 
     })
-
-    return response
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json({ error: 'An error occurred' }, { status: 500 })
