@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { pages } from '@/lib/db/schema'
 import { eq, isNull, and, desc } from 'drizzle-orm'
 import { ulid } from 'ulid'
+import { getWorkspaceForUser } from '@/lib/db/tenancy'
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +21,11 @@ export async function GET(request: NextRequest) {
     let whereClause = and(isNull(pages.deletedAt), eq(pages.createdBy, user.id))!
 
     if (workspaceId) {
+      // WORKSPACE ISOLATION: verify user owns this workspace
+      const workspace = await getWorkspaceForUser(user.id, workspaceId)
+      if (!workspace) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
       whereClause = and(whereClause, eq(pages.workspaceId, workspaceId))!
     }
 
@@ -57,6 +63,12 @@ export async function POST(request: NextRequest) {
         { error: 'Workspace ID is required' },
         { status: 400 }
       )
+    }
+
+    // WORKSPACE ISOLATION: verify user owns this workspace before creating pages
+    const workspace = await getWorkspaceForUser(user.id, workspaceId)
+    if (!workspace) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     // Get parent info if parentId provided

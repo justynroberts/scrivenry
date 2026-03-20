@@ -1,10 +1,11 @@
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 
-// Workspaces - top-level containers
+// Workspaces - top-level containers, owned by a user
 export const workspaces = sqliteTable('workspaces', {
   id: text('id').primaryKey(), // ULID
   name: text('name').notNull(),
   slug: text('slug').unique().notNull(),
+  ownerId: text('owner_id').notNull().references(() => users.id), // ← PER-USER ISOLATION
   icon: text('icon'),
   settings: text('settings', { mode: 'json' }).$type<Record<string, unknown>>().default({}),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
