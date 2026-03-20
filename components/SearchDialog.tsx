@@ -12,6 +12,7 @@ import { VisuallyHidden } from '@/components/ui/visually-hidden'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { Page, Tag } from '@/lib/db/schema'
+import { apiFetch } from '@/lib/api-client'
 
 interface PageWithTags extends Page {
   tags?: Tag[]
@@ -38,7 +39,7 @@ export function SearchDialog({ open, onOpenChange, pages, workspaceId }: SearchD
     async function fetchTagData() {
       try {
         // Fetch all tags
-        const tagsRes = await fetch(`/api/tags?workspace_id=${workspaceId}`)
+        const tagsRes = await apiFetch(`/api/tags?workspace_id=${workspaceId}`)
         if (tagsRes.ok) {
           const { tags } = await tagsRes.json()
           setAllTags(tags || [])
@@ -47,7 +48,7 @@ export function SearchDialog({ open, onOpenChange, pages, workspaceId }: SearchD
         // Fetch page tags for each page (simple approach - could be optimized with a batch endpoint)
         const tagMap = new Map<string, Tag[]>()
         for (const page of pages.slice(0, 50)) {
-          const res = await fetch(`/api/pages/${page.id}/tags`)
+          const res = await apiFetch(`/api/pages/${page.id}/tags`)
           if (res.ok) {
             const { tags } = await res.json()
             if (tags && tags.length > 0) {

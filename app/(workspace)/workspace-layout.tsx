@@ -8,6 +8,7 @@ import { WelcomeTour } from '@/components/WelcomeTour'
 import { NotificationPanel, NotificationToggle, getAutoOpenEnabled } from '@/components/notifications/NotificationPanel'
 import { PageProvider, usePages } from '@/lib/contexts/PageContext'
 import type { Page } from '@/lib/db/schema'
+import { apiFetch } from '@/lib/api-client'
 
 interface WorkspaceLayoutProps {
   children: React.ReactNode
@@ -34,7 +35,7 @@ function WorkspaceContent({
   useEffect(() => {
     async function checkTourStatus() {
       try {
-        const res = await fetch('api/user/tour')
+        const res = await apiFetch('/api/user/tour')
         if (res.ok) {
           const data = await res.json()
           if (!data.hasSeenTour) {
@@ -53,7 +54,7 @@ function WorkspaceContent({
   useEffect(() => {
     async function loadFavorites() {
       try {
-        const res = await fetch('api/favorites')
+        const res = await apiFetch('/api/favorites')
         if (res.ok) {
           const data = await res.json()
           setFavorites(data.favorites || [])
@@ -67,7 +68,7 @@ function WorkspaceContent({
 
   const handleCreatePage = useCallback(async (parentId?: string) => {
     try {
-      const res = await fetch('api/pages', {
+      const res = await apiFetch('/api/pages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,7 +90,7 @@ function WorkspaceContent({
 
   const handleDeletePage = useCallback(async (pageId: string) => {
     try {
-      const res = await fetch(`/api/pages/${pageId}`, {
+      const res = await apiFetch(`/api/pages/${pageId}`, {
         method: 'DELETE',
       })
 
@@ -104,7 +105,7 @@ function WorkspaceContent({
 
   const handleDuplicatePage = useCallback(async (pageId: string) => {
     try {
-      const res = await fetch(`/api/pages/${pageId}/duplicate`, {
+      const res = await apiFetch(`/api/pages/${pageId}/duplicate`, {
         method: 'POST',
       })
 
@@ -131,7 +132,7 @@ function WorkspaceContent({
 
     // Persist to backend
     try {
-      await fetch('api/pages/reorder', {
+      await apiFetch('/api/pages/reorder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageIds }),
@@ -153,7 +154,7 @@ function WorkspaceContent({
 
     // Persist to backend
     try {
-      await fetch('api/pages/move', {
+      await apiFetch('/api/pages/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageId, newParentId }),
@@ -167,7 +168,7 @@ function WorkspaceContent({
   useEffect(() => {
     async function fetchUnreadCount() {
       try {
-        const res = await fetch('api/notifications?status=unread&limit=1')
+        const res = await apiFetch('/api/notifications?status=unread&limit=1')
         if (res.ok) {
           const data = await res.json()
           const newCount = data.unread_count || 0

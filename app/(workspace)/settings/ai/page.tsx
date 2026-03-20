@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Bot, Key, Server, Cpu, Check, AlertCircle, Loader2, Sparkles, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { apiFetch } from '@/lib/api-client'
 
 type AIProvider = 'anthropic' | 'ollama' | 'openai'
 
@@ -102,7 +103,7 @@ export default function AISettingsPage() {
     setModelsError('')
 
     try {
-      const response = await fetch('api/ai/models', {
+      const response = await apiFetch('/api/ai/models', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, endpoint }),
@@ -164,7 +165,7 @@ export default function AISettingsPage() {
     setTestMessage('')
 
     try {
-      const response = await fetch('api/ai/test', {
+      const response = await apiFetch('/api/ai/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),

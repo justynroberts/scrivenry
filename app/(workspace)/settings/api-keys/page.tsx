@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { apiFetch } from '@/lib/api-client'
 
 interface ApiKey {
   id: string
@@ -35,7 +36,7 @@ export default function ApiKeysPage() {
 
   async function fetchKeys() {
     try {
-      const res = await fetch('api/api-keys')
+      const res = await apiFetch('/api/api-keys')
       if (res.ok) {
         const data = await res.json()
         setKeys(data.keys)
@@ -49,7 +50,7 @@ export default function ApiKeysPage() {
 
   async function createKey() {
     try {
-      const res = await fetch('api/api-keys', {
+      const res = await apiFetch('/api/api-keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newKeyName }),
@@ -70,7 +71,7 @@ export default function ApiKeysPage() {
     if (!confirm('Are you sure you want to delete this API key?')) return
 
     try {
-      const res = await fetch(`/api/api-keys/${id}`, {
+      const res = await apiFetch(`/api/api-keys/${id}`, {
         method: 'DELETE',
       })
 

@@ -9,6 +9,7 @@ import { NotificationCard } from './NotificationCard'
 import { NotificationBadge } from './NotificationBadge'
 import { cn } from '@/lib/utils'
 import type { Notification } from '@/lib/db/schema'
+import { apiFetch } from '@/lib/api-client'
 
 // Helper to get/set auto-open preference
 export function getAutoOpenEnabled(): boolean {
@@ -42,7 +43,7 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
   const fetchNotifications = useCallback(async () => {
     try {
       const status = activeTab === 'all' ? 'active' : activeTab
-      const res = await fetch(`/api/notifications?status=${status}`)
+      const res = await apiFetch(`/api/notifications?status=${status}`)
       if (res.ok) {
         const data = await res.json()
         setNotifications(data.notifications)
@@ -70,7 +71,7 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
 
   const handleAction = async (id: string, action: string, data?: Record<string, unknown>) => {
     try {
-      const res = await fetch(`/api/notifications/${id}`, {
+      const res = await apiFetch(`/api/notifications/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ...data }),

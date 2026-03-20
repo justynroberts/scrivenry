@@ -35,6 +35,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { apiFetch } from '@/lib/api-client'
 
 interface AIChatProps {
   editor: Editor | null
@@ -149,7 +150,7 @@ export function AIChat({ editor, pageContent, isOpen, onClose }: AIChatProps) {
         ? messages.filter((m) => m.id !== editingMessageId).map((m) => ({ role: m.role, content: m.content }))
         : messages.map((m) => ({ role: m.role, content: m.content }))
 
-      const response = await fetchWithRetry('/api/ai/chat', {
+      const response = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
