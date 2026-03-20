@@ -9,22 +9,60 @@ Scrivenry is deployed on dev.fintonlabs.com (VPS) behind Traefik reverse proxy a
 - **Database:** SQLite at `/app/data/scrivenry.db` (inside Docker volume)
 - **Docker container:** `scrivenry:latest`
 
-## Authentication
+## Security Features (Updated 2026-03-20)
 
-### How It Works
+### Password Hashing - bcrypt
 
-1. **Registration/Login:** User submits credentials via POST `/api/auth/login`
-2. **JWT Generation:** Server returns JWT token (7-day expiry)
-3. **Client Storage:** Browser stores token in localStorage + sets as cookie (`auth-token`)
-4. **Server Validation:** `validateRequest()` reads cookie and validates JWT signature
-5. **Access:** If valid, user is authenticated; otherwise redirected to login
+- **Algorithm:** bcrypt with 10 rounds (via bcryptjs)
+- **Migration:** Old SHA-256 passwords will fail login; users must re-register
+- **Verification:** New hashes start with `$2b$10$...`
 
-### Security Notes
+### httpOnly Cookies
 
-- **JWT Secret:** Must be set in `JWT_SECRET` environment variable (no hardcoded fallback)
-- **Password Hashing:** SHA-256 (NOT salted; acceptable for internal app)
-- **Token Storage:** localStorage (accessible to XSS attacks); use `httpOnly: true` for production
-- **Cookie Path:** Set to `/` for Traefik compatibility
+- **Implementation:** JWT token set via server `Set-Cookie` header
+- **Flags:** `HttpOnly`, `Secure`, `SameSite=lax`, `Path=/`
+- **Expiry:** 7 days
+- **Client:** No more `document.cookie` or localStorage for auth
+- **Protection:** Prevents XSS attacks from reading auth tokens
+
+### Rate Limiting
+
+- **Login:** 5 attempts per IP per 15 minutes
+- **Register:** 3 attempts per IP per hour
+- **Response:** HTTP 429 Too Many Requests with `Retry-After` header
+
+### CSRF Protection
+
+- **Endpoint:** `GET /api/auth/csrf` returns a token
+- **Token format:** `{timestamp}.{random}.{signature}`
+- **Validity:** 1 hour
+- **Required:** All login/register requests must include `csrfToken` in body
+- **Failure:** HTTP 403 "Invalid request. Please refresh and try again."
+
+## Authentication Flow
+
+1. **Page Load:** Client fetches CSRF token from `/api/auth/csrf`
+2. **Form Submit:** Client includes `csrfToken` in POST body
+3. **Server Validates:** CSRF token signature and expiry
+4. **Rate Check:** IP-based rate limiting
+5. **Credential Check:** bcrypt password verification
+6. **Response:** Server sets `Set-Cookie: auth-token=...` with httpOnly flag
+7. **Subsequent Requests:** Browser automatically sends cookie
+
+## Environment Variables
+
+**Required:**
+- `JWT_SECRET` - JWT signing secret (min 32 chars)
+- `DATABASE_URL` - SQLite path (default: `file:/app/data/scrivenry.db`)
+
+**Security:**
+- `AUTH_SECURE_COOKIES` - Require HTTPS for cookies (default: `true`)
+- `CSRF_SECRET` - CSRF token signing key (falls back to JWT_SECRET)
+
+**Generate secure secrets:**
+```bash
+openssl rand -base64 32
+```
 
 ## Database Backups
 
@@ -92,15 +130,9 @@ docker start scrivenry
    sleep 2
    ```
 
-3. **Start new container:**
+3. **Start with docker-compose:**
    ```bash
-   docker run -d --name scrivenry --network traefik-net -v scrivenry-data:/app/data \
-     --label traefik.enable=true \
-     --label 'traefik.http.routers.scrivenry.rule=PathPrefix(`/scrivenry`)' \
-     --label traefik.http.routers.scrivenry.entrypoints=websecure \
-     --label traefik.http.routers.scrivenry.tls=true \
-     --label 'traefik.http.services.scrivenry.loadbalancer.server.port=3847' \
-     scrivenry:latest
+   docker-compose up -d scrivenry
    ```
 
 4. **Verify health:**
@@ -108,58 +140,56 @@ docker start scrivenry
    curl -sk https://dev.fintonlabs.com:8080/scrivenry/ | head -c 100
    ```
 
-### Environment Variables
-
-**Required:**
-- `JWT_SECRET` - JWT signing secret (min 32 chars)
-- `DATABASE_URL` - SQLite path (default: `file:/app/data/scrivenry.db`)
-
-**Optional:**
-- `AUTH_SECURE_COOKIES` - Require HTTPS (default: `true`)
-- `NODE_ENV` - `production` for prod, `development` for dev
-
 ## Troubleshooting
 
 ### Login Returns 401
 
-**Cause:** User doesn't exist in database or password is wrong.
+**Cause:** User doesn't exist or has old SHA-256 password (migration needed).
 
-**Fix:** Create user via register endpoint:
+**Fix:** Re-register with same email (old hash won't match):
 ```bash
+CSRF=$(curl -sk https://dev.fintonlabs.com:8080/scrivenry/api/auth/csrf | jq -r '.csrfToken')
 curl -sk https://dev.fintonlabs.com:8080/scrivenry/api/auth/register -X POST \
   -H 'Content-Type: application/json' \
-  -d '{
-    "email": "user@example.com",
-    "password": "password123",
-    "name": "User Name"
-  }'
+  -d "{
+    \"email\": \"user@example.com\",
+    \"password\": \"password123\",
+    \"name\": \"User Name\",
+    \"csrfToken\": \"$CSRF\"
+  }"
 ```
 
-### Container Won't Start
+### Login Returns 429 (Rate Limited)
 
-**Cause:** Database initialization failure or missing volume.
+**Cause:** Too many failed login attempts from your IP.
 
-**Fix:**
-```bash
-# Check logs
-docker logs scrivenry
+**Fix:** Wait 15 minutes (login) or 1 hour (register). Check `Retry-After` header.
 
-# Recreate volume if needed
-docker volume rm scrivenry-data
-docker volume create scrivenry-data
+### Login Returns 403 (CSRF Failed)
 
-# Restart container
-docker run -d --name scrivenry ... scrivenry:latest
-```
+**Cause:** Missing or invalid CSRF token.
+
+**Fix:** Ensure you're fetching `/api/auth/csrf` first and including the token.
 
 ### Cookie Not Being Set
 
-**Cause:** Secure flag + mixed HTTPS/HTTP or domain mismatch.
+**Cause:** Response received but no `Set-Cookie` header visible.
 
-**Fix:** Ensure:
-1. Accessing via HTTPS (dev.fintonlabs.com uses SSL)
-2. Cookie path is `/` not `/scrivenry/` (Traefik strips subpath)
-3. SameSite=lax is set
+**Check:** Use `curl -D-` to see full headers. Cookie should have `HttpOnly` flag.
+
+### Old Users Can't Login
+
+**Cause:** SHA-256 password hashes are no longer supported (bcrypt migration).
+
+**Fix:** Users with old hashes must re-register. Delete old account from database if needed:
+```bash
+docker exec scrivenry node -e "
+const Database = require('better-sqlite3');
+const db = new Database('/app/data/scrivenry.db');
+db.prepare('DELETE FROM users WHERE email = ?').run('old@email.com');
+db.close();
+"
+```
 
 ## Development
 
@@ -176,16 +206,30 @@ npm run dev
 Create `.env.local`:
 ```
 DATABASE_URL="file:./data/scrivenry.db"
-JWT_SECRET="dev-secret-key-32-chars-minimum"
+JWT_SECRET="dev-secret-key-32-chars-minimum-here"
 AUTH_SECURE_COOKIES="false"
+CSRF_SECRET="dev-csrf-secret-32-chars-minimum"
 ```
 
 ## Security Checklist
 
-- [ ] JWT_SECRET is NOT hardcoded (must use env var)
-- [ ] Password hashing is consistent (SHA-256)
-- [ ] Database backups run daily
-- [ ] No API keys in git
-- [ ] .env files in .gitignore
-- [ ] Traefik labels are correct (expose, not ports)
+- [x] Password hashing with bcrypt (10 rounds)
+- [x] httpOnly cookies (XSS protection)
+- [x] Rate limiting on auth endpoints
+- [x] CSRF protection on forms
+- [x] JWT_SECRET from environment variable
+- [x] Database backups run daily
+- [x] No API keys in git
+- [x] .env files in .gitignore
+- [x] Traefik labels are correct (expose, not ports)
 
+## API Reference
+
+### Auth Endpoints
+
+| Endpoint | Method | Auth | Rate Limit |
+|----------|--------|------|------------|
+| `/api/auth/csrf` | GET | No | No |
+| `/api/auth/login` | POST | No | 5/15min |
+| `/api/auth/register` | POST | No | 3/1hr |
+| `/api/auth/logout` | POST | Yes | No |

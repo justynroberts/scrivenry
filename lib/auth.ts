@@ -3,18 +3,22 @@ import { users } from './db/schema'
 import { eq } from 'drizzle-orm'
 import { cookies } from 'next/headers'
 import { cache } from 'react'
-import { createHmac } from 'crypto'
+import { createHmac, randomBytes } from 'crypto'
+import bcrypt from 'bcryptjs'
+
+const BCRYPT_ROUNDS = 10
 
 export async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const data = encoder.encode(password)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  return bcrypt.hash(password, BCRYPT_ROUNDS)
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return (await hashPassword(password)) === hash
+  // Check if it's a bcrypt hash (starts with $2a$, $2b$, or $2y$)
+  if (hash.startsWith('$2')) {
+    return bcrypt.compare(password, hash)
+  }
+  // Legacy SHA-256 hash (64 hex chars) - will fail, user needs to re-register
+  return false
 }
 
 export function generateJWTSync(payload: Record<string, any>): string {
@@ -43,6 +47,35 @@ export function validateJWTSync(token: string): Record<string, any> | null {
   } catch {
     return null
   }
+}
+
+// CSRF Token Management
+const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || 'scrivenry-csrf-secret'
+
+export function generateCSRFToken(): string {
+  const timestamp = Date.now().toString(36)
+  const random = randomBytes(16).toString('hex')
+  const data = `${timestamp}.${random}`
+  const signature = createHmac('sha256', CSRF_SECRET).update(data).digest('hex').slice(0, 16)
+  return `${data}.${signature}`
+}
+
+export function validateCSRFToken(token: string): boolean {
+  if (!token) return false
+  const parts = token.split('.')
+  if (parts.length !== 3) return false
+  
+  const [timestamp, random, signature] = parts
+  const data = `${timestamp}.${random}`
+  const expectedSig = createHmac('sha256', CSRF_SECRET).update(data).digest('hex').slice(0, 16)
+  
+  if (signature !== expectedSig) return false
+  
+  // Token valid for 1 hour
+  const tokenTime = parseInt(timestamp, 36)
+  if (Date.now() - tokenTime > 3600000) return false
+  
+  return true
 }
 
 export const validateRequest = cache(async () => {
