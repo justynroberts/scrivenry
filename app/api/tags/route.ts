@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { tags, pageTags } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { ulid } from 'ulid'
+import { getWorkspaceForUser } from '@/lib/db/tenancy'
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,6 +18,12 @@ export async function GET(request: NextRequest) {
 
     if (!workspaceId) {
       return NextResponse.json({ error: 'Workspace ID required' }, { status: 400 })
+    }
+
+    // TENANT ISOLATION: verify user owns this workspace
+    const workspace = await getWorkspaceForUser(user.id, workspaceId)
+    if (!workspace) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const allTags = await db.query.tags.findMany({
@@ -42,6 +49,12 @@ export async function POST(request: NextRequest) {
 
     if (!workspaceId || !name) {
       return NextResponse.json({ error: 'Workspace ID and name required' }, { status: 400 })
+    }
+
+    // TENANT ISOLATION: verify user owns this workspace
+    const workspace = await getWorkspaceForUser(user.id, workspaceId)
+    if (!workspace) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const tagId = ulid()
@@ -70,6 +83,19 @@ export async function DELETE(request: NextRequest) {
 
     if (!tagId) {
       return NextResponse.json({ error: 'Tag ID required' }, { status: 400 })
+    }
+
+    // TENANT ISOLATION: verify the tag belongs to user's workspace
+    const tag = await db.query.tags.findFirst({
+      where: eq(tags.id, tagId),
+    })
+    if (!tag) {
+      return NextResponse.json({ error: 'Tag not found' }, { status: 404 })
+    }
+
+    const workspace = await getWorkspaceForUser(user.id, tag.workspaceId)
+    if (!workspace) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     // Delete page-tag associations first
