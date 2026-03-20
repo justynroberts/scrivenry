@@ -7,6 +7,7 @@ import { Sparkles, Loader2, Check, X, RefreshCw, ArrowRight } from 'lucide-react
 import { Button } from '@/components/ui/button'
 import { getAISettings, AI_PROMPTS } from '@/lib/ai/providers'
 import { fetchWithRetry } from '@/lib/api/fetch-with-retry'
+import { apiFetch } from '@/lib/api-client'
 
 interface AIBlockComponentProps {
   node: {
@@ -52,7 +53,7 @@ const AIBlockComponent = ({ node, updateAttributes, deleteNode, editor }: AIBloc
     updateAttributes({ status: 'loading', prompt })
 
     try {
-      const response = await fetchWithRetry('/api/ai/chat', {
+      const response = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

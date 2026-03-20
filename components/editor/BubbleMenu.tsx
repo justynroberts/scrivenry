@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils'
 import { useState, useRef, useEffect } from 'react'
 import { getAISettings, AI_PROMPTS } from '@/lib/ai/providers'
 import { fetchWithRetry } from '@/lib/api/fetch-with-retry'
+import { apiFetch } from '@/lib/api-client'
 
 type AIAction = 'improve' | 'expand' | 'summarize' | 'simplify' | 'longer' | 'shorter' | 'grammar' | 'translate'
 
@@ -174,7 +175,7 @@ export function EditorBubbleMenu({ editor }: EditorBubbleMenuProps) {
         default: prompt = AI_PROMPTS.improve(selectedText)
       }
 
-      const response = await fetchWithRetry('/api/ai/chat', {
+      const response = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], settings }),

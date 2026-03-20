@@ -28,6 +28,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import type { Page, Tag } from '@/lib/db/schema'
+import { apiFetch } from '@/lib/api-client'
 
 interface PageEditorProps {
   page: Page
@@ -89,7 +90,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
       }
 
       try {
-        const res = await fetch(`/api/pages/${page.id}`)
+        const res = await apiFetch(`/api/pages/${page.id}`)
         if (!res.ok) return
 
         const { page: serverPage } = await res.json()
@@ -128,7 +129,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
     setSaving(true)
     lastLocalEditRef.current = Date.now()
     try {
-      const res = await fetch(`/api/pages/${page.id}`, {
+      const res = await apiFetch(`/api/pages/${page.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content }),
@@ -161,7 +162,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
       updateSidebarPage(page.id, { title: newTitle })
       lastLocalEditRef.current = Date.now()
       try {
-        const res = await fetch(`/api/pages/${page.id}`, {
+        const res = await apiFetch(`/api/pages/${page.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: newTitle }),
@@ -181,7 +182,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
     updateSidebarPage(page.id, { icon: emoji || null })
     lastLocalEditRef.current = Date.now()
     try {
-      const res = await fetch(`/api/pages/${page.id}`, {
+      const res = await apiFetch(`/api/pages/${page.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ icon: emoji || null }),
@@ -199,7 +200,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
     setPage(prev => ({ ...prev, cover }))
     lastLocalEditRef.current = Date.now()
     try {
-      const res = await fetch(`/api/pages/${page.id}`, {
+      const res = await apiFetch(`/api/pages/${page.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cover }),
@@ -216,13 +217,13 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
   const toggleFavorite = useCallback(async () => {
     try {
       if (isFavorite) {
-        await fetch('api/favorites', {
+        await apiFetch('/api/favorites', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pageId: page.id }),
         })
       } else {
-        await fetch('api/favorites', {
+        await apiFetch('/api/favorites', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pageId: page.id }),
@@ -240,7 +241,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
 
   const confirmDelete = useCallback(async () => {
     try {
-      const res = await fetch(`/api/pages/${page.id}`, {
+      const res = await apiFetch(`/api/pages/${page.id}`, {
         method: 'DELETE',
       })
       if (res.ok) {
@@ -254,7 +255,7 @@ export function PageEditor({ page: initialPage, breadcrumb, isFavorite: initialF
 
   const handleDuplicate = useCallback(async () => {
     try {
-      const res = await fetch(`/api/pages/${page.id}/duplicate`, {
+      const res = await apiFetch(`/api/pages/${page.id}/duplicate`, {
         method: 'POST',
       })
       if (res.ok) {

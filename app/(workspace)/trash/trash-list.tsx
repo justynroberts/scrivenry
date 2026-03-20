@@ -6,6 +6,7 @@ import { Trash2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { Page } from '@/lib/db/schema'
+import { apiFetch } from '@/lib/api-client'
 
 interface TrashListProps {
   pages: Page[]
@@ -20,7 +21,7 @@ export function TrashList({ pages: initialPages }: TrashListProps) {
 
   async function handleRestore(pageId: string) {
     try {
-      const res = await fetch(`/api/pages/${pageId}/restore`, {
+      const res = await apiFetch(`/api/pages/${pageId}/restore`, {
         method: 'POST',
       })
 
@@ -42,7 +43,7 @@ export function TrashList({ pages: initialPages }: TrashListProps) {
     if (!pageToDelete) return
 
     try {
-      const res = await fetch(`/api/pages/${pageToDelete}?permanent=true`, {
+      const res = await apiFetch(`/api/pages/${pageToDelete}?permanent=true`, {
         method: 'DELETE',
       })
 
@@ -60,7 +61,7 @@ export function TrashList({ pages: initialPages }: TrashListProps) {
   async function handleEmptyTrash() {
     try {
       const deletePromises = pages.map(page =>
-        fetch(`/api/pages/${page.id}?permanent=true`, {
+        apiFetch(`/api/pages/${page.id}?permanent=true`, {
           method: 'DELETE',
         })
       )

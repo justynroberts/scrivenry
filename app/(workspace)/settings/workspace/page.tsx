@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Building2, Download, Loader2, Check, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { apiFetch } from '@/lib/api-client'
 
 interface Workspace {
   id: string
@@ -25,7 +26,7 @@ export default function WorkspaceSettingsPage() {
 
   async function fetchWorkspace() {
     try {
-      const response = await fetch('api/workspace')
+      const response = await apiFetch('/api/workspace')
       if (response.ok) {
         const data = await response.json()
         setWorkspace(data)
@@ -48,7 +49,7 @@ export default function WorkspaceSettingsPage() {
     setError('')
 
     try {
-      const response = await fetch('api/workspace', {
+      const response = await apiFetch('/api/workspace', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim() }),
@@ -76,7 +77,7 @@ export default function WorkspaceSettingsPage() {
     setExporting(true)
 
     try {
-      const response = await fetch('api/workspace/export')
+      const response = await apiFetch('/api/workspace/export')
       if (response.ok) {
         const blob = await response.blob()
         const url = URL.createObjectURL(blob)

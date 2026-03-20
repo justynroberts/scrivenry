@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { apiFetch } from '@/lib/api-client'
 
 interface ProfileFormProps {
   user: {
@@ -23,7 +24,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
     setMessage(null)
 
     try {
-      const res = await fetch('api/user', {
+      const res = await apiFetch('/api/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),

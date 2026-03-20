@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { getAISettings, AI_PROMPTS } from '@/lib/ai/providers'
 import { fetchWithRetry } from '@/lib/api/fetch-with-retry'
+import { apiFetch } from '@/lib/api-client'
 
 interface AIWritingAssistantProps {
   editor: Editor | null
@@ -143,7 +144,7 @@ export function AIWritingAssistant({ editor }: AIWritingAssistantProps) {
           prompt = AI_PROMPTS.improve(selectedText)
       }
 
-      const response = await fetchWithRetry('/api/ai/chat', {
+      const response = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

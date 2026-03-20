@@ -4,19 +4,14 @@
  * Universal API client for deployment-agnostic requests.
  * Works with basePath set (Traefik at /scrivenry) or without (standalone at root).
  *
- * Next.js injects the configured basePath into __NEXT_DATA__ at runtime,
- * so this works regardless of how the app is deployed.
+ * Uses NEXT_PUBLIC_BASE_PATH (inlined at build time via next.config.js env block)
+ * because App Router does not expose basePath via __NEXT_DATA__.
  */
 
-// Get basePath from Next.js runtime data
+// Get basePath from Next.js build-time env var (NEXT_PUBLIC_BASE_PATH is inlined at build time).
+// App Router does NOT expose basePath via __NEXT_DATA__, so we use the env var approach instead.
 function getBasePath(): string {
-  if (typeof window === 'undefined') return ''
-  try {
-    const nextData = (window as any).__NEXT_DATA__
-    return nextData?.basePath || ''
-  } catch {
-    return ''
-  }
+  return process.env.NEXT_PUBLIC_BASE_PATH || ''
 }
 
 /**
