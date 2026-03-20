@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateRequest } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { getPageForUser } from '@/lib/db/tenancy'
 import { pageTags, tags } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { ulid } from 'ulid'

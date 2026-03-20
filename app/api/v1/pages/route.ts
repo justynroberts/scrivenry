@@ -52,9 +52,9 @@ export async function GET(request: NextRequest) {
     const workspaceId = searchParams.get('workspace_id')
     const parentId = searchParams.get('parent_id')
     const limit = parseInt(searchParams.get('limit') || '50')
-    const cursor = searchParams.get('cursor')
 
-    let whereClause = isNull(pages.deletedAt)
+    // TENANT ISOLATION: always filter by API key owner's pages only
+    let whereClause = and(isNull(pages.deletedAt), eq(pages.createdBy, auth.userId))!
 
     if (workspaceId) {
       whereClause = and(whereClause, eq(pages.workspaceId, workspaceId))!
@@ -124,13 +124,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get parent info if parent_id provided
+    // Get parent info if parent_id provided (only from user's own pages)
     let path: string[] = []
     let depth = 0
 
     if (parent_id) {
       const parent = await db.query.pages.findFirst({
-        where: eq(pages.id, parent_id),
+        where: and(eq(pages.id, parent_id), eq(pages.createdBy, auth.userId)),
       })
       if (!parent) {
         return NextResponse.json(
@@ -142,11 +142,11 @@ export async function POST(request: NextRequest) {
       depth = (parent.depth || 0) + 1
     }
 
-    // Get position
+    // Get position (among user's own pages only)
     const siblings = await db.query.pages.findMany({
       where: parent_id
-        ? and(eq(pages.parentId, parent_id), isNull(pages.deletedAt))
-        : and(eq(pages.workspaceId, workspace_id), isNull(pages.parentId), isNull(pages.deletedAt)),
+        ? and(eq(pages.parentId, parent_id), isNull(pages.deletedAt), eq(pages.createdBy, auth.userId))
+        : and(eq(pages.workspaceId, workspace_id), isNull(pages.parentId), isNull(pages.deletedAt), eq(pages.createdBy, auth.userId)),
     })
     const position = siblings.length
 
@@ -189,7 +189,6 @@ export async function POST(request: NextRequest) {
       })
     } catch (notifError) {
       console.error('Failed to create notification:', notifError)
-      // Don't fail the request if notification creation fails
     }
 
     return NextResponse.json({

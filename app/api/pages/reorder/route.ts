@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateRequest } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { getPageForUser } from '@/lib/db/tenancy'
 import { pages } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
@@ -19,6 +20,17 @@ export async function POST(request: NextRequest) {
         { error: 'pageIds must be an array' },
         { status: 400 }
       )
+    }
+
+    // TENANT ISOLATION: verify user owns ALL pages before reordering any
+    for (const pageId of pageIds) {
+      const page = await getPageForUser(user.id, pageId)
+      if (!page) {
+        return NextResponse.json(
+          { error: `Page not found or access denied: ${pageId}` },
+          { status: 403 }
+        )
+      }
     }
 
     // Update position for each page

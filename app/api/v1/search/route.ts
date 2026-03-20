@@ -58,15 +58,14 @@ export async function GET(request: NextRequest) {
 
     const startTime = Date.now()
 
-    // Simple LIKE-based search (FTS5 would be better but requires setup)
     const searchPattern = `%${query}%`
 
+    // TENANT ISOLATION: always filter by API key owner's pages only
     let whereClause = and(
       isNull(pages.deletedAt),
-      or(
-        like(pages.title, searchPattern)
-      )
-    )
+      eq(pages.createdBy, auth.userId),
+      or(like(pages.title, searchPattern))
+    )!
 
     if (workspaceId) {
       whereClause = and(whereClause, eq(pages.workspaceId, workspaceId))!
@@ -110,16 +109,9 @@ function highlightMatch(text: string, query: string): string {
 function calculateScore(text: string, query: string): number {
   const lowerText = text.toLowerCase()
   const lowerQuery = query.toLowerCase()
-
-  // Exact match
   if (lowerText === lowerQuery) return 1.0
-
-  // Starts with
   if (lowerText.startsWith(lowerQuery)) return 0.9
-
-  // Contains
   if (lowerText.includes(lowerQuery)) return 0.7
-
   return 0.5
 }
 

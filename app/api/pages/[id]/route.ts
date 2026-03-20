@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { pages } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { pageEvents } from '@/lib/events'
+import { getPageForUser } from '@/lib/db/tenancy'
 
 interface RouteParams {
   params: Promise<{
@@ -20,9 +21,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params
 
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, id),
-    })
+    // TENANT ISOLATION: verify user owns this page
+    const page = await getPageForUser(user.id, id)
 
     if (!page || page.deletedAt) {
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
@@ -49,9 +49,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json()
     const { title, icon, cover, content, properties } = body
 
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, id),
-    })
+    // TENANT ISOLATION: verify user owns this page
+    const page = await getPageForUser(user.id, id)
 
     if (!page || page.deletedAt) {
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
@@ -98,19 +97,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const searchParams = request.nextUrl.searchParams
     const permanent = searchParams.get('permanent') === 'true'
 
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, id),
-    })
+    // TENANT ISOLATION: verify user owns this page
+    const page = await getPageForUser(user.id, id)
 
     if (!page) {
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
     if (permanent) {
-      // Permanent delete
       await db.delete(pages).where(eq(pages.id, id))
     } else {
-      // Soft delete
       await db
         .update(pages)
         .set({

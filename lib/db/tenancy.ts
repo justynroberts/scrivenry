@@ -1,38 +1,47 @@
 /**
  * Tenant isolation helpers for Scrivenry (VPS edition).
  *
- * All API endpoints MUST use these helpers to prevent cross-tenant data leakage.
- * Since this version doesn't have workspace_members, tenant isolation is enforced
- * via the single shared workspace model — all authenticated users share access,
- * but page-level operations are protected by auth.
- *
- * For the restore endpoint, admin-only access is enforced.
+ * SECURITY: Each user can only access pages they created (createdBy = userId).
+ * The workspace is shared but all page data is scoped per user.
  */
 
 import { db } from '@/lib/db'
-import { pages } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { pages, workspaces } from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 
 /**
- * Get a page and verify the requesting user is authenticated.
- * Returns the page or null if not found.
- * In the shared-workspace model, any authenticated user can access any non-deleted page.
+ * Get a page only if it belongs to the requesting user (createdBy check).
+ * Returns the page or null if not found / not owned by the user.
  */
 export async function getPageForUser(userId: string, pageId: string) {
-  // userId is checked to ensure caller is authenticated (validateRequest must have succeeded)
   if (!userId) return null
 
   const page = await db.query.pages.findFirst({
-    where: eq(pages.id, pageId),
+    where: and(
+      eq(pages.id, pageId),
+      eq(pages.createdBy, userId) // ← TENANT ISOLATION: only own pages
+    ),
   })
 
   return page || null
 }
 
 /**
- * Check if a user can access a given workspace.
- * In the shared-workspace model, any authenticated user has access.
+ * Get the shared workspace (all users share one workspace on VPS edition).
+ * Access check: any authenticated user can use the shared workspace,
+ * but pages within it are scoped by createdBy.
  */
 export async function userHasWorkspaceAccess(userId: string, _workspaceId: string): Promise<boolean> {
   return !!userId
 }
+
+/**
+ * Get the workspace ID for the shared workspace.
+ */
+export async function getDefaultWorkspaceId(): Promise<string | null> {
+  const workspace = await db.query.workspaces.findFirst()
+  return workspace?.id ?? null
+}
+
+// Alias for API key routes
+export const getPageForApiUser = getPageForUser

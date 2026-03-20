@@ -1,6 +1,7 @@
 // MIT License - Copyright (c) fintonlabs.com
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { getPageForUser } from '@/lib/db/tenancy'
 import { pages, apiKeys } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { createHash } from 'crypto'
@@ -57,9 +58,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { parent_id } = body
 
     // Get the page
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, id),
-    })
+    // TENANT ISOLATION: verify API key user owns this page
+    const page = await getPageForUser(auth.userId, id)
 
     if (!page || page.deletedAt) {
       return NextResponse.json(
@@ -81,9 +81,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     let newDepth = 0
 
     if (parent_id) {
-      const parent = await db.query.pages.findFirst({
-        where: eq(pages.id, parent_id),
-      })
+      // TENANT ISOLATION: verify API key user owns parent page too
+      const parent = await getPageForUser(auth.userId, parent_id)
 
       if (!parent) {
         return NextResponse.json(
