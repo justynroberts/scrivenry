@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, unique } from 'drizzle-orm/sqlite-core'
 
 // Workspaces - top-level containers
 export const workspaces = sqliteTable('workspaces', {
@@ -7,6 +7,11 @@ export const workspaces = sqliteTable('workspaces', {
   slug: text('slug').unique().notNull(),
   icon: text('icon'),
   settings: text('settings', { mode: 'json' }).$type<Record<string, unknown>>().default({}),
+  // Multi-user fields
+  ownerId: text('owner_id').references(() => users.id, { onDelete: 'set null' }),
+  isPublic: integer('is_public', { mode: 'boolean' }).notNull().default(false),
+  maxMembers: integer('max_members'), // null = unlimited
+  features: text('features', { mode: 'json' }).$type<Record<string, unknown>>().default({}),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 })
@@ -49,6 +54,10 @@ export const pages = sqliteTable('pages', {
   templateId: text('template_id'),
   properties: text('properties', { mode: 'json' }).$type<Record<string, unknown>>().default({}),
   content: text('content', { mode: 'json' }).$type<Record<string, unknown>>(), // TipTap JSON content
+  // Multi-user access control
+  accessLevel: text('access_level').notNull().default('private'), // 'private', 'workspace', 'public', 'link_only'
+  canAnyoneEdit: integer('can_anyone_edit', { mode: 'boolean' }).notNull().default(false),
+  editHistoryEnabled: integer('edit_history_enabled', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   createdBy: text('created_by').references(() => users.id),
@@ -165,12 +174,85 @@ export const notifications = sqliteTable('notifications', {
   archivedAt: integer('archived_at', { mode: 'timestamp' }),
 })
 
+// ============================================================
+// MULTI-USER TABLES (Phase 1)
+// ============================================================
+
+// Workspace Members - tracks user membership & roles
+export const workspaceMembers = sqliteTable('workspace_members', {
+  id: text('id').primaryKey(), // ULID
+  workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  role: text('role').notNull(), // 'owner', 'admin', 'editor', 'commenter', 'viewer'
+  permissions: text('permissions', { mode: 'json' }).$type<Record<string, unknown>>(), // Custom overrides (nullable)
+  status: text('status').notNull().default('active'), // 'active', 'invited', 'pending', 'suspended'
+  invitedBy: text('invited_by').references(() => users.id, { onDelete: 'set null' }),
+  invitedAt: integer('invited_at', { mode: 'timestamp' }),
+  joinedAt: integer('joined_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+}, (t) => ({
+  uniqWorkspaceUser: unique().on(t.workspaceId, t.userId),
+}))
+
+// Workspace Invitations - email-based and link-based invites
+export const workspaceInvitations = sqliteTable('workspace_invitations', {
+  id: text('id').primaryKey(), // ULID
+  workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  email: text('email'), // null for link-based invites
+  role: text('role').notNull(),
+  token: text('token').unique().notNull(), // Shareable invite token
+  createdBy: text('created_by').notNull().references(() => users.id),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }),
+  usedAt: integer('used_at', { mode: 'timestamp' }),
+  usedBy: text('used_by').references(() => users.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
+// Page Permissions - fine-grained per-page access
+export const pagePermissions = sqliteTable('page_permissions', {
+  id: text('id').primaryKey(), // ULID
+  pageId: text('page_id').notNull().references(() => pages.id, { onDelete: 'cascade' }),
+  targetType: text('target_type').notNull(), // 'user', 'role', 'workspace'
+  targetId: text('target_id').notNull(),
+  permission: text('permission').notNull(), // 'view', 'edit', 'comment', 'admin'
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+}, (t) => ({
+  uniqPageTarget: unique().on(t.pageId, t.targetType, t.targetId),
+}))
+
+// Workspace Audit Log - track all user actions
+export const workspaceAuditLog = sqliteTable('workspace_audit_log', {
+  id: text('id').primaryKey(), // ULID
+  workspaceId: text('workspace_id').notNull().references(() => workspaces.id, { onDelete: 'cascade' }),
+  actorId: text('actor_id').notNull().references(() => users.id),
+  action: text('action').notNull(), // 'page_created', 'page_deleted', 'user_invited', etc.
+  resourceType: text('resource_type'), // 'page', 'user', 'workspace'
+  resourceId: text('resource_id'),
+  metadata: text('metadata', { mode: 'json' }).$type<Record<string, unknown>>(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
+// Collaboration Sessions - real-time editing tracking
+export const collaborationSessions = sqliteTable('collaboration_sessions', {
+  id: text('id').primaryKey(), // ULID
+  pageId: text('page_id').notNull().references(() => pages.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  sessionToken: text('session_token').unique().notNull(),
+  cursorPosition: text('cursor_position', { mode: 'json' }).$type<{ line: number; column: number }>(),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  lastActivity: integer('last_activity', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
 // Admin Audit Log - system-level admin actions
 export const adminAuditLog = sqliteTable('admin_audit_log', {
   id: text('id').primaryKey(), // ULID
   adminId: text('admin_id').notNull().references(() => users.id),
-  action: text('action').notNull(),
-  targetType: text('target_type'),
+  action: text('action').notNull(), // 'user_created', 'user_deleted', 'password_reset', 'role_changed', 'user_deactivated'
+  targetType: text('target_type'), // 'user', 'workspace', 'page'
   targetId: text('target_id'),
   details: text('details', { mode: 'json' }).$type<Record<string, unknown>>(),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
@@ -196,6 +278,22 @@ export type PublicShare = typeof publicShares.$inferSelect
 export type RecentView = typeof recentViews.$inferSelect
 export type Notification = typeof notifications.$inferSelect
 export type NewNotification = typeof notifications.$inferInsert
+
+// Multi-user types
+export type WorkspaceMember = typeof workspaceMembers.$inferSelect
+export type NewWorkspaceMember = typeof workspaceMembers.$inferInsert
+export type WorkspaceInvitation = typeof workspaceInvitations.$inferSelect
+export type NewWorkspaceInvitation = typeof workspaceInvitations.$inferInsert
+export type PagePermission = typeof pagePermissions.$inferSelect
+export type NewPagePermission = typeof pagePermissions.$inferInsert
+export type WorkspaceAuditLog = typeof workspaceAuditLog.$inferSelect
+export type NewWorkspaceAuditLog = typeof workspaceAuditLog.$inferInsert
+export type CollaborationSession = typeof collaborationSessions.$inferSelect
+export type NewCollaborationSession = typeof collaborationSessions.$inferInsert
+
+// Role type
+export type WorkspaceRole = 'owner' | 'admin' | 'editor' | 'commenter' | 'viewer'
+export type PermissionAction = 'view' | 'edit' | 'delete' | 'invite' | 'admin_settings' | 'delete_workspace' | 'comment' | 'remove_member'
 
 // Admin types
 export type AdminAuditLog = typeof adminAuditLog.$inferSelect

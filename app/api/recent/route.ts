@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { recentViews, pages } from '@/lib/db/schema'
 import { eq, desc, and, isNull } from 'drizzle-orm'
 import { ulid } from 'ulid'
+import { getPageForUser } from '@/lib/db/tenancy'
 
 export async function GET() {
   try {
@@ -51,6 +52,12 @@ export async function POST(request: NextRequest) {
 
     if (!pageId) {
       return NextResponse.json({ error: 'Page ID required' }, { status: 400 })
+    }
+
+    // Tenant isolation: verify page exists and user is authenticated
+    const page = await getPageForUser(user.id, pageId)
+    if (!page || page.deletedAt) {
+      return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
     // Delete existing view for this page

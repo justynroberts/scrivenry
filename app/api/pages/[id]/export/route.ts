@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateRequest } from '@/lib/auth'
-import { db } from '@/lib/db'
-import { pages } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { getPageForUser } from '@/lib/db/tenancy'
 
 interface RouteParams {
   params: Promise<{
@@ -267,9 +265,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const searchParams = request.nextUrl.searchParams
     const format = searchParams.get('format') || 'markdown'
 
-    const page = await db.query.pages.findFirst({
-      where: eq(pages.id, id),
-    })
+    // Tenant isolation: verify user is authenticated before exporting
+    const page = await getPageForUser(user.id, id)
 
     if (!page || page.deletedAt) {
       return NextResponse.json({ error: 'Page not found' }, { status: 404 })
