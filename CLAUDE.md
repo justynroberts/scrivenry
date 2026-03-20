@@ -201,3 +201,75 @@ sqlite.pragma('wal_autocheckpoint = 50')  // Checkpoint every 50 WAL pages (defa
 ### Data Location
 - **Production DB:** 
 - **DO NOT** use  as the bind mount —  is cleared on reboot!
+
+## Admin Panel (added 2026-03-20)
+
+**URL:** https://dev.fintonlabs.com:8080/scrivenry/admin
+
+### Access
+- Only users with  can access
+- Justyn's accounts are pre-seeded as admin:
+  - 
+  - 
+
+### Features
+- **Dashboard** — Stats cards (users, pages, workspaces, storage used), recent signups
+- **Users** — Full table with search, sortable, admin badge, status, page count
+  - Actions: Reset password, Grant/Revoke admin, Activate/Deactivate, Delete
+- **Create User** — Inline form, auto-generates temp password if blank
+- **Audit Log** — All admin actions tracked (create, delete, password reset, role change)
+
+### API Routes
+-  — List all users with page count
+-  — Create user (returns temp password if auto-generated)
+-  — Get single user
+-  — Update user (isAdmin, isActive, resetPassword)
+-  — Delete user (cannot delete self)
+-  — Dashboard stats
+-  — Admin audit log (paginated)
+
+### Schema Changes
+- Added  to users table
+- Added  to users table
+- Added  to users table
+- Added  table
+
+### Files Added
+-  — Server component with auth guard
+-  — 5 API routes
+-  — Main tabbed dashboard
+-  — User table + CRUD
+-  — Stats cards
+-  — Audit log
+-  — Create user form/modal
+-  — Audit log utilities
+-  — DB migration (run inside container)
+
+
+## Admin Panel (added 2026-03-20)
+
+URL: https://dev.fintonlabs.com:8080/scrivenry/admin
+
+### Access
+- Only users with is_admin = true can access
+- Admin users: justyn@fintonlabs.com, justynroberts@gmail.com
+
+### Features
+- Dashboard: Stats cards (users, pages, workspaces, storage), recent signups
+- Users: Table with search, admin badge, status, page count
+  - Actions: Reset password, Grant/Revoke admin, Activate/Deactivate, Delete
+- Create User: Form with auto-generated temp password option
+- Audit Log: All admin actions tracked
+
+### API Routes (all under /api/admin/)
+- GET /users, POST /users, GET/PUT/DELETE /users/[id]
+- GET /stats, GET /audit-log
+
+### Schema Changes
+- Added is_admin, is_active, last_active_at columns to users
+- Added admin_audit_log table
+
+### Key Files
+- app/(workspace)/admin/page.tsx
+- components/admin/AdminDashboard.tsx, UserManager.tsx, StatsCards.tsx, AuditLog.tsx
+- lib/admin-audit.ts, scripts/migrate-admin.js

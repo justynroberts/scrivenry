@@ -17,7 +17,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   if (hash.startsWith('$2')) {
     return bcrypt.compare(password, hash)
   }
-  // Legacy SHA-256 hash (64 hex chars) - will fail, user needs to re-register
+  // Legacy SHA-256 hash (64 hex chars)
   return false
 }
 
@@ -78,7 +78,16 @@ export function validateCSRFToken(token: string): boolean {
   return true
 }
 
-export const validateRequest = cache(async () => {
+export type AuthUser = {
+  id: string
+  email: string
+  name: string | null
+  avatar?: string | null
+  isAdmin: boolean
+  isActive: boolean
+}
+
+export const validateRequest = cache(async (): Promise<{ user: AuthUser | null; session: Record<string, any> | null }> => {
   const cookieStore = await cookies()
   const token = cookieStore.get('auth-token')?.value
   
@@ -99,7 +108,14 @@ export const validateRequest = cache(async () => {
       return { user: null, session: null }
     }
     return {
-      user: { id: user.id, email: user.email, name: user.name },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name ?? null,
+        avatar: user.avatar ?? null,
+        isAdmin: user.isAdmin ?? false,
+        isActive: user.isActive ?? true,
+      },
       session: payload
     }
   } catch {

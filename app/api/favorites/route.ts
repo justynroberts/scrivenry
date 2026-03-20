@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { favorites, pages } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { ulid } from 'ulid'
+import { getPageForUser } from '@/lib/db/tenancy'
 
 export async function GET() {
   try {
@@ -52,6 +53,12 @@ export async function POST(request: Request) {
         { error: 'Page ID is required' },
         { status: 400 }
       )
+    }
+
+    // Tenant isolation: verify page exists and user is authenticated
+    const page = await getPageForUser(user.id, pageId)
+    if (!page || page.deletedAt) {
+      return NextResponse.json({ error: 'Page not found' }, { status: 404 })
     }
 
     // Check if already favorited

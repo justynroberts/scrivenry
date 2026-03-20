@@ -25,6 +25,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Security: only admins can perform full database restore (destructive operation)
+    if (!user.isAdmin) {
+      return NextResponse.json({ error: 'Forbidden: Admin access required for database restore' }, { status: 403 })
+    }
+
     const backup = await request.json()
 
     // Validate backup format
