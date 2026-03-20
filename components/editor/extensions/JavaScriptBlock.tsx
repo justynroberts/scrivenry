@@ -7,6 +7,7 @@ import { Code2, Play, Trash2, Copy, Check, RotateCcw, Terminal, Eye, EyeOff, Spa
 import { Button } from '@/components/ui/button'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { apiFetch } from '@/lib/api-client'
 
 interface CodeExecutionResult {
   success: boolean
@@ -55,7 +56,7 @@ const JavaScriptBlockComponent = ({ node, updateAttributes, deleteNode }: JavaSc
         model: 'llama3.2'
       }
 
-      const response = await fetch('/api/ai/chat', {
+      const response = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

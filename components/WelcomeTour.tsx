@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { apiFetch } from '@/lib/api-client'
 
 interface TourStep {
   target: string
@@ -84,7 +85,7 @@ export function WelcomeTour({ onComplete }: WelcomeTourProps) {
     setIsVisible(false)
     // Save to database
     try {
-      await fetch('/api/user/tour', { method: 'POST' })
+      await apiFetch('/api/user/tour', { method: 'POST' })
     } catch (error) {
       console.error('Failed to save tour status:', error)
     }

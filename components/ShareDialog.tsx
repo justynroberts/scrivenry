@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { apiFetch, shareUrl } from '@/lib/api-client'
 
 interface ShareDialogProps {
   pageId: string
@@ -39,7 +40,7 @@ export function ShareDialog({ pageId, pageTitle, open, onOpenChange }: ShareDial
   const fetchShare = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/pages/${pageId}/share`)
+      const res = await apiFetch(`/api/pages/${pageId}/share`)
       if (res.ok) {
         const data = await res.json()
         setShare(data.share || null)
@@ -60,7 +61,7 @@ export function ShareDialog({ pageId, pageTitle, open, onOpenChange }: ShareDial
   const createShare = async () => {
     setCreating(true)
     try {
-      const res = await fetch(`/api/pages/${pageId}/share`, {
+      const res = await apiFetch(`/api/pages/${pageId}/share`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ allowEditing: false }),
@@ -79,7 +80,7 @@ export function ShareDialog({ pageId, pageTitle, open, onOpenChange }: ShareDial
   const removeShare = async () => {
     setRemoving(true)
     try {
-      const res = await fetch(`/api/pages/${pageId}/share`, {
+      const res = await apiFetch(`/api/pages/${pageId}/share`, {
         method: 'DELETE',
       })
       if (res.ok) {
@@ -94,7 +95,7 @@ export function ShareDialog({ pageId, pageTitle, open, onOpenChange }: ShareDial
 
   const copyLink = async () => {
     if (!share) return
-    const url = `${window.location.origin}/share/${share.id}`
+    const url = shareUrl(share.id)
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
@@ -118,7 +119,7 @@ export function ShareDialog({ pageId, pageTitle, open, onOpenChange }: ShareDial
     }
   }
 
-  const shareUrl = share ? `${typeof window !== 'undefined' ? window.location.origin : ''}/share/${share.id}` : ''
+  const shareLink = share ? shareUrl(share.id) : ''
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,7 +155,7 @@ export function ShareDialog({ pageId, pageTitle, open, onOpenChange }: ShareDial
               {/* Link input */}
               <div className="flex items-center gap-2">
                 <div className="flex-1 min-w-0 bg-muted rounded-md px-3 py-2 text-sm font-mono overflow-hidden">
-                  <span className="block truncate">{shareUrl}</span>
+                  <span className="block truncate">{shareLink}</span>
                 </div>
                 <Button
                   variant="outline"
@@ -172,7 +173,7 @@ export function ShareDialog({ pageId, pageTitle, open, onOpenChange }: ShareDial
                   variant="outline"
                   size="icon"
                   className="shrink-0"
-                  onClick={() => window.open(shareUrl, '_blank')}
+                  onClick={() => window.open(shareLink, '_blank')}
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>

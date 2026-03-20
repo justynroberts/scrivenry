@@ -168,3 +168,36 @@ sqlite3 data/scrivenry.db "UPDATE pages SET content = readfile('/tmp/fix.json') 
 - Editor supports `/` slash commands for block types
 - Cmd+K opens search dialog
 - Pages support infinite nesting
+
+## IMPORTANT: Deployment Fix (2026-03-20)
+
+### Problem: Pages Not Saving (Data Loss on Container Restart)
+
+**Root Cause:** The original docker-compose used a single-file bind mount:
+```yaml
+volumes:
+  - /tmp/scrivenry.db:/app/data/scrivenry.db  # WRONG - single file only!
+```
+
+SQLite WAL mode creates companion files ( and ) alongside the main DB file. With a single-file bind mount, these WAL files are created **inside the container overlay filesystem** (not on the host). When the container restarts, the WAL files are lost. Any data written to WAL but not yet checkpointed to the main DB is permanently lost.
+
+**Symptoms:** Pages appear to save within a session but are gone after container restart or browser refresh.
+
+### Fix Applied
+
+1. **Changed docker-compose to directory bind mount** — persists all SQLite files:
+```yaml
+volumes:
+  - /home/justyn/scrivenry-data:/app/data  # CORRECT - full directory
+```
+
+2. **Added aggressive WAL autocheckpoint** in :
+```typescript
+sqlite.pragma('wal_autocheckpoint = 50')  // Checkpoint every 50 WAL pages (default: 1000)
+```
+
+3. **Fixed password hash** — user  had a SHA-256 hash (seeded by start script) but auth.ts only accepts bcrypt. Updated password to bcrypt.
+
+### Data Location
+- **Production DB:** 
+- **DO NOT** use  as the bind mount —  is cleared on reboot!

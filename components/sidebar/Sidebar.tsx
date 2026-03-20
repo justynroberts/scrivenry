@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import type { Page } from '@/lib/db/schema'
+import { apiFetch } from '@/lib/api-client'
 
 interface SidebarProps {
   pages: Page[]
@@ -356,7 +357,7 @@ export function Sidebar({
   }
 
   async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
+    await apiFetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
     router.refresh()
   }
