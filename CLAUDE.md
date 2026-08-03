@@ -252,7 +252,7 @@ URL: https://dev.fintonlabs.com:8080/scrivenry/admin
 
 ### Access
 - Only users with is_admin = true can access
-- Admin users: justyn@fintonlabs.com, justynroberts@gmail.com
+- Admin users: set via ADMIN_EMAILS or `node scripts/migrate-admin.js --seed-admin <email>`
 
 ### Features
 - Dashboard: Stats cards (users, pages, workspaces, storage), recent signups

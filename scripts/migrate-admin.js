@@ -57,31 +57,32 @@ db.exec(`
 `)
 console.log('✅ Created admin_audit_log table (if not exists)')
 
-// 3. Seed admin user
-const seedEmail = process.argv.includes('--seed-admin')
-  ? process.argv[process.argv.indexOf('--seed-admin') + 1]
-  : 'justyn@fintonlabs.com'
+// 3. Promote admin accounts.
+// Addresses come from `--seed-admin <email>` or ADMIN_EMAILS (comma-separated).
+// Nothing is hardcoded, so running this against any deployment is safe.
+const flagIndex = process.argv.indexOf('--seed-admin')
+const seedEmails = (
+  flagIndex !== -1 && process.argv[flagIndex + 1]
+    ? [process.argv[flagIndex + 1]]
+    : (process.env.ADMIN_EMAILS || '').split(',')
+)
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean)
 
-if (seedEmail) {
-  const user = db.prepare("SELECT id, email, is_admin FROM users WHERE email = ?").get(seedEmail)
-  if (user) {
-    if (!user.is_admin) {
-      db.prepare("UPDATE users SET is_admin = 1 WHERE email = ?").run(seedEmail)
-      console.log(`✅ Marked ${seedEmail} as admin`)
-    } else {
-      console.log(`⏭  ${seedEmail} is already admin`)
-    }
-  } else {
-    console.log(`⚠️  User ${seedEmail} not found — skipping admin seed`)
-  }
+if (seedEmails.length === 0) {
+  console.log('⏭  No admin emails supplied (--seed-admin <email> or ADMIN_EMAILS) — skipping')
 }
 
-// Also seed justynroberts@gmail.com if it exists
-const altEmail = 'justynroberts@gmail.com'
-const altUser = db.prepare("SELECT id, email, is_admin FROM users WHERE email = ?").get(altEmail)
-if (altUser && !altUser.is_admin) {
-  db.prepare("UPDATE users SET is_admin = 1 WHERE email = ?").run(altEmail)
-  console.log(`✅ Marked ${altEmail} as admin`)
+for (const email of seedEmails) {
+  const user = db.prepare("SELECT id, is_admin FROM users WHERE email = ?").get(email)
+  if (!user) {
+    console.log(`⚠️  User ${email} not found — skipping`)
+  } else if (user.is_admin) {
+    console.log(`⏭  ${email} is already admin`)
+  } else {
+    db.prepare("UPDATE users SET is_admin = 1 WHERE email = ?").run(email)
+    console.log(`✅ Marked ${email} as admin`)
+  }
 }
 
 console.log('\n🎉 Admin migration complete!')

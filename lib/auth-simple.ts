@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { cookies } from 'next/headers'
 import { cache } from 'react'
 import { createHmac } from 'crypto'
+import { jwtSecret } from './secrets'
 
 // Password hashing
 export async function hashPassword(password: string): Promise<string> {
@@ -20,7 +21,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
 // Simple JWT using Node crypto
 export function generateJWTSync(payload: Record<string, any>): string {
-  const secret = process.env.JWT_SECRET || '***REMOVED***'
+  const secret = jwtSecret()
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
   const now = Math.floor(Date.now() / 1000)
   const data = { ...payload, iat: now, exp: now + 604800 }
@@ -31,7 +32,7 @@ export function generateJWTSync(payload: Record<string, any>): string {
 }
 
 export function validateJWTSync(token: string): Record<string, any> | null {
-  const secret = process.env.JWT_SECRET || '***REMOVED***'
+  const secret = jwtSecret()
   const parts = token.split('.')
   if (parts.length !== 3) return null
   

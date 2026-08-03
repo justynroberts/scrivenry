@@ -19,8 +19,8 @@ Solution: Created lib/api-client.ts with apiFetch(), shareUrl(), clientUrl()
 Result: Works behind Traefik or standalone at any path
 
 ### 3. Authentication Fix
-Fixed: justyn@fintonlabs.com couldn't login
-Solution: Reset to bcrypt, password = ***REMOVED***
+Fixed: the admin account couldn't login
+Solution: Re-hashed the password with bcrypt (SHA-256 hashes are no longer accepted)
 Result: Admin can now login and manage
 
 ### 4. Showcase Pages

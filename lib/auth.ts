@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { cache } from 'react'
 import { createHmac, randomBytes } from 'crypto'
 import bcrypt from 'bcryptjs'
+import { jwtSecret, csrfSecret } from './secrets'
 
 const BCRYPT_ROUNDS = 10
 
@@ -22,7 +23,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export function generateJWTSync(payload: Record<string, any>): string {
-  const secret = process.env.JWT_SECRET || '***REMOVED***'
+  const secret = jwtSecret()
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url')
   const now = Math.floor(Date.now() / 1000)
   const data = { ...payload, iat: now, exp: now + 604800 }
@@ -33,7 +34,7 @@ export function generateJWTSync(payload: Record<string, any>): string {
 }
 
 export function validateJWTSync(token: string): Record<string, any> | null {
-  const secret = process.env.JWT_SECRET || '***REMOVED***'
+  const secret = jwtSecret()
   const parts = token.split('.')
   if (parts.length !== 3) return null
   
@@ -50,13 +51,12 @@ export function validateJWTSync(token: string): Record<string, any> | null {
 }
 
 // CSRF Token Management
-const CSRF_SECRET = process.env.CSRF_SECRET || process.env.JWT_SECRET || '***REMOVED***'
 
 export function generateCSRFToken(): string {
   const timestamp = Date.now().toString(36)
   const random = randomBytes(16).toString('hex')
   const data = `${timestamp}.${random}`
-  const signature = createHmac('sha256', CSRF_SECRET).update(data).digest('hex').slice(0, 16)
+  const signature = createHmac('sha256', csrfSecret()).update(data).digest('hex').slice(0, 16)
   return `${data}.${signature}`
 }
 
@@ -67,7 +67,7 @@ export function validateCSRFToken(token: string): boolean {
   
   const [timestamp, random, signature] = parts
   const data = `${timestamp}.${random}`
-  const expectedSig = createHmac('sha256', CSRF_SECRET).update(data).digest('hex').slice(0, 16)
+  const expectedSig = createHmac('sha256', csrfSecret()).update(data).digest('hex').slice(0, 16)
   
   if (signature !== expectedSig) return false
   

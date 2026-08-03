@@ -49,9 +49,9 @@ next-env.d.ts
 # Vercel
 .vercel
 
-# Environment files
+# Environment files — every .env variant is ignored except the example.
+# .env.production was previously tracked and leaked real signing secrets.
 .env
-.env.local
-.env.production.local
-.env.*.local
+.env.*
+!.env.example
 docker-compose.yml

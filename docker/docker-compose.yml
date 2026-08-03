@@ -8,18 +8,28 @@ services:
     container_name: scrivenry-app
     ports:
       - "3847:3847"
+    # Secrets come from .env (gitignored). See .env.example.
+    env_file:
+      - ../.env
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/app/data/scrivenry.db
+      # Required — startup fails loudly rather than falling back to a known key.
+      - JWT_SECRET=${JWT_SECRET:?set JWT_SECRET in .env — generate with: openssl rand -base64 32}
+      - CSRF_SECRET=${CSRF_SECRET:-}
+      - AUTH_SECURE_COOKIES=${AUTH_SECURE_COOKIES:-true}
+      # Optional first admin; leave unset to register through the UI.
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
     volumes:
       - scrivenry-data:/app/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3847/api/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3847/scrivenry/login"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 25s
 
 volumes:
   scrivenry-data:
